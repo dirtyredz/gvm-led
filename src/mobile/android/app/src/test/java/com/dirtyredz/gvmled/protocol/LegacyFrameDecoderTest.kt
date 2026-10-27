@@ -59,7 +59,7 @@ class LegacyFrameDecoderTest {
     @Test fun boundedNoiseMalformedLengthsAndTruncatedFrameRecovery() {
         val decoder = LegacyFrameDecoder()
         assertTrue(decoder.feed(ByteArray(100_000) { 0x4c }).isEmpty())
-        assertTrue(decoder.bufferedByteCount <= LegacyFrameDecoder.MAX_FRAME_SIZE)
+        assertTrue(decoder.bufferedByteCount <= LegacyFrame.MAX_FRAME_SIZE)
         assertEquals(1, decoder.feed(hex("4C 54 FF 4C 54 00") + hello).size)
         assertEquals(1, decoder.feed(report.copyOf(8) + hello).size)
         decoder.feed(report.copyOf(8))

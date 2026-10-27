@@ -5,23 +5,44 @@ sealed interface LegacyMessage {
     val deviceType: Int
 }
 
-data class HelloReply internal constructor(
+data class HelloReply private constructor(
     override val deviceId: Int,
     override val deviceType: Int,
     val minCctKelvin: Int,
     val maxCctKelvin: Int,
-) : LegacyMessage
+) : LegacyMessage {
+    companion object {
+        internal fun decode(deviceId: Int, deviceType: Int, payload: List<Int>): HelloReply? {
+            if (payload.size != 5 || payload.subList(0, 3) != listOf(0, 0, 2)) return null
+            val minCct = payload[3]
+            val maxCct = payload[4]
+            if (minCct == 0 || minCct > maxCct) return null
+            return HelloReply(deviceId, deviceType, minCct * 100, maxCct * 100)
+        }
+    }
+}
 
 /** Deliberately not a full report: no power, mode, HSI or scene confirmation. */
-data class ShortStateReply internal constructor(
+data class ShortStateReply private constructor(
     override val deviceId: Int,
     override val deviceType: Int,
     val pick: Int,
     val brightness: Int,
     val cct: Int,
-) : LegacyMessage
+) : LegacyMessage {
+    companion object {
+        internal fun decode(deviceId: Int, deviceType: Int, payload: List<Int>): ShortStateReply? {
+            if (payload.size != 6 || payload.subList(0, 3) != listOf(0, 0, 1)) return null
+            val pick = payload[3]
+            val brightness = payload[4]
+            val cct = payload[5]
+            if (pick !in 1..12 || brightness !in 0..100 || cct == 0) return null
+            return ShortStateReply(deviceId, deviceType, pick, brightness, cct)
+        }
+    }
+}
 
-/** Immutable validated wire values. Construction is restricted to the frame decoder. */
+/** Immutable validated wire values. Construction is restricted to message parsing. */
 class FullStateReport private constructor(
     override val deviceId: Int,
     override val deviceType: Int,

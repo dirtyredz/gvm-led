@@ -6,7 +6,7 @@ package com.dirtyredz.gvmled.protocol
  * arbitrarily large notification cannot grow retained input beyond the maximum frame size.
  */
 class LegacyFrameDecoder {
-    private val buffer = ArrayList<Byte>(MAX_FRAME_SIZE)
+    private val buffer = ArrayList<Byte>(LegacyFrame.MAX_FRAME_SIZE)
     val bufferedByteCount: Int get() = buffer.size
 
     fun reset() = buffer.clear()
@@ -22,13 +22,13 @@ class LegacyFrameDecoder {
 
     private fun drain(messages: MutableList<LegacyMessage>) {
         while (buffer.isNotEmpty()) {
-            if (unsigned(0) != 0x4c) { discard(1); continue }
+            if (unsigned(0) != LegacyFrame.HEADER_FIRST) { discard(1); continue }
             if (buffer.size < 2) return
-            if (unsigned(1) != 0x54) { discard(1); continue }
-            if (buffer.size < 3) return
+            if (unsigned(1) != LegacyFrame.HEADER_SECOND) { discard(1); continue }
+            if (buffer.size < LegacyFrame.PREFIX_SIZE) return
             val length = unsigned(2)
-            if (length !in KNOWN_LENGTHS) { discard(1); continue }
-            val total = length + 3
+            if (length !in LegacyFrame.REPLY_LENGTHS) { discard(1); continue }
+            val total = LegacyFrame.frameSize(length)
             if (buffer.size < total) {
                 // A truncated valid-length prefix must not hide a later complete valid message.
                 val next = (1 until buffer.size).firstOrNull { decodeAt(it) != null }
@@ -45,34 +45,19 @@ class LegacyFrameDecoder {
     }
 
     private fun decodeAt(offset: Int): LegacyMessage? {
-        if (buffer.size - offset < 3 || unsigned(offset) != 0x4c || unsigned(offset + 1) != 0x54) return null
+        if (buffer.size - offset < LegacyFrame.PREFIX_SIZE ||
+            unsigned(offset) != LegacyFrame.HEADER_FIRST ||
+            unsigned(offset + 1) != LegacyFrame.HEADER_SECOND
+        ) return null
         val length = unsigned(offset + 2)
-        if (length !in KNOWN_LENGTHS || buffer.size - offset < length + 3) return null
-        val bytes = buffer.subList(offset, offset + length + 3).toByteArray()
+        val frameSize = LegacyFrame.frameSize(length)
+        if (length !in LegacyFrame.REPLY_LENGTHS || buffer.size - offset < frameSize) return null
+        val bytes = buffer.subList(offset, offset + frameSize).toByteArray()
         if (Crc16Xmodem.calculate(bytes) != 0) return null
-        val values = bytes.map { it.toInt() and 0xff }
-        val id = values[3]
-        val type = values[4]
-        return when {
-            length == 10 && values[5] == 0x53 -> {
-                if (values.subList(6, 9) != listOf(0, 0, 2) || values[9] == 0 || values[9] > values[10]) null
-                else HelloReply(id, type, values[9] * 100, values[10] * 100)
-            }
-            length == 14 && values[5] == 3 -> FullStateReport.decode(id, type, values.subList(6, 15))
-            length == 11 && values[5] == 2 -> {
-                if (values.subList(6, 9) != listOf(0, 0, 1) || values[9] !in 1..12 ||
-                    values[10] !in 0..100 || values[11] == 0) null
-                else ShortStateReply(id, type, values[9], values[10], values[11])
-            }
-            else -> null
-        }
+        return LegacyMessageParser.parse(bytes)
     }
 
     private fun unsigned(index: Int): Int = buffer[index].toInt() and 0xff
     private fun discard(count: Int) { buffer.subList(0, count).clear() }
 
-    companion object {
-        const val MAX_FRAME_SIZE = 17
-        private val KNOWN_LENGTHS = setOf(10, 11, 14)
-    }
 }
