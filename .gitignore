@@ -1,0 +1,7 @@
+.tmp/
+.venv/
+__pycache__/
+*.apk
+.structure-review-pending*
+.structure-review-paused
+.docket/
