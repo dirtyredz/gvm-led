@@ -5,7 +5,9 @@ CRC16/XMODEM framed `4C 54` packets). Goal: avoid the official app's colour-mode
 
 ## Working here
 - Source of truth: `docs/research/protocol.md`. Docs: `STRUCTURE.md`, `docs/{ARCHITECTURE,DECISIONS,FEATURES,ROADMAP,GOTCHAS}.md`. Read GOTCHAS before touching BLE code.
-- No app code or build yet. Prototype scripts: Python 3.12 + bleak in git-ignored `.tmp/scan/`.
+- Native Android is the chosen app platform; slice 1 is in progress on a separate branch. The Python
+  3.12 + bleak reference lives in `src/research/ble/` and runs through
+  `scripts/owner/prove-light-commands.ps1` (`-DryRun`, `-Check`, `-Camera`).
 - Hardware tests need the phone app closed and the lights in range; run them one connection at a time.
 - Owner-run steps are `.ps1` files in `scripts/owner/` built on `owner-run.ps1` (dry-run, logs to `.tmp/owner-runs/`).
 - Review gate: pre-push hook blocks pushes while review is pending (`/gate status`).

@@ -81,23 +81,17 @@ Add exact responsibility bullets under `STRUCTURE.md`’s `## Layout` for these 
 
 Each numbered slice is independently reviewable Docket work. These are proposed titles, not invented item IDs.
 
-### 0. Prove visible legacy commands — prerequisite to Android slice 1
+### 0. Prove visible legacy commands — complete 2026-10-26
 
-**Yes: complete the on-light proof first.** Hello and state queries are proven; set commands, scene behavior and the colour workaround are not. That uncertainty affects the application’s central synchronization contract.
+The tracked reference in `src/research/ble/`, run through
+`scripts/owner/prove-light-commands.ps1`, completed the on-light proof on both fixtures. The run
+validated CRCs, required a valid hello, compared complete applicable state, and recorded wanted
+values, packets, fresh reports, and camera observations. Power, CCT endpoints, HSI, scenes 19 and
+20, acknowledgements, combined operation, and mode-first HSI after reconnect all passed. See
+`docs/research/protocol.md`, “Visible proof run” and “Photo check of the re-run.”
 
-Use existing item `dk-3931270b`, coordinating tracked-script promotion with `dk-5f0c19af` after inspecting their authoritative bodies.
-
-Promote `.tmp/scan/live_test.py` into the files above. Correct its proof weaknesses:
-
-- Reject invalid CRCs instead of merely logging them.
-- Stop when hello fails; never send sets with guessed device type.
-- Compare complete applicable state, not mode alone.
-- Add power off/on, saturation, CCT endpoints, representative scenes and report acknowledgements.
-- Record wanted values, sent packets, fresh reports and visible observations.
-
-With the official app closed, connect sequentially and prove each light independently, then combined operation. Confirm mode-first HSI survives disconnect/reconnect without a CCT detour. Test scenes 19 and 20 to cover CCT, colour and effect-time fields; a complete twenty-scene sweep is unnecessary before building.
-
-Record firmware behavior when setting parameters while powered off and whether mode changes affect power. Freeze the power ordering from this evidence before slice 4.
+The proof also established the app’s power ordering: settings are accepted while off, a mode change
+does not power on the light, and a full settings transaction should send power-on last.
 
 ### 1. Android scaffold, packet codec and fast CI
 
@@ -275,7 +269,8 @@ No broad emulator suite is required for the fast gate.
 
 ## 5. Verification
 
-This plan is based on reading; no build, test or hardware command was run.
+The BLE hardware proof passed on 2026-10-26. Android build, test, installation, and release checks
+remain applicable as their implementation slices land.
 
 The implementer must run the CD-derived Android checks from the repository root:
 
@@ -319,11 +314,9 @@ Run `dk check` before pushing and satisfy the existing repository review gate.
 
 ## 7. Open questions / assumptions
 
-- **Docket access:** `dk show` could not resolve this sandbox as a Git worktree. Item bodies and open notes were therefore unavailable. Before implementation, use filtered `dk list --json` and `dk show --json`, run `docket guide` before any item write, reconcile the proposed slices with existing facts, and claim/release work normally. No items were changed.
 - **Initial ownership of settings:** With no saved intent, adopt the first full report. Subsequently, reconnect/resume restores the last app-wanted settings. Physical controls update observed state; after a completed transaction, they do not trigger perpetual corrective writes until another app action or resume.
-- **Power semantics:** Slice 0 must establish whether full parameter sets work while off. The build proceeds only after power ordering is documented.
+- **Power semantics:** The proof established that full parameter sets work while off and mode changes do not power on the light. Send the full settings, then power on last.
 - **Confirmation limitation:** The wire protocol has no transaction identifier. A matching report received after the final write is the strongest available evidence, not a correlated acknowledgement.
 - **Foreground operation:** No background service or continuous background control is planned. This keeps connection ownership predictable; lights retain their last settings while the app is closed.
 - **Scenes:** Twenty IDs are statically supported; representative hardware proof is sufficient initially. Do not describe every scene as hardware-verified.
 - **Repository/release identity:** Assume `dirtyredz/gvm-led`, default branch `master`, and GVM-specific 1Password items. Confirm these before provisioning release infrastructure; do not reuse CD’s signing identity.
-- **Stale source documentation:** GVM’s opening protocol summary still favors mesh despite later contradictory live evidence. CD’s distribution document also contains an obsolete “no key generated” statement despite an existing certificate pin. Follow the verified legacy findings and implemented CD release flow, preserving those discrepancies in documentation updates.

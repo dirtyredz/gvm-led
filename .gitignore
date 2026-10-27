@@ -5,3 +5,7 @@ __pycache__/
 .structure-review-pending*
 .structure-review-paused
 .docket/
+.claude/
+docs/plans/*.events.jsonl
+docs/plans/*.job.json
+docs/plans/*.stderr.log

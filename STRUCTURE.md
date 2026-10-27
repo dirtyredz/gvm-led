@@ -2,13 +2,13 @@
 
 ## Overview
 
-Custom controller for two GVM 800D3X-RGB lights over the legacy plain BLE GATT path. No app code
-yet; the repo holds research, docs and owner-run script plumbing. Platform (phone, PC or family
-command center) is undecided (see Docket).
+Custom controller for two GVM 800D3X-RGB lights over the legacy plain BLE GATT path. The tracked
+BLE reference and owner-run proof tooling are complete. Native Android is the chosen app platform;
+its first implementation slice is in progress on a separate branch.
 
 ## Architecture at a glance
 
-Host (TBD) -> BLE GATT write-without-response to one characteristic per light -> Telink-based light.
+Native Android app -> BLE GATT write-without-response to one characteristic per light -> Telink-based light.
 See [ARCHITECTURE](docs/ARCHITECTURE.md).
 
 ## Layout
@@ -22,7 +22,7 @@ src/
 └── research/ble/  # Python reference + visible proof run (bleak)
 scripts/
 └── owner/       # owner-run PowerShell steps and plumbing
-.tmp/            # git-ignored: scan scripts, decompiled app, logs
+.tmp/            # git-ignored: disposable research inputs and run output
 ```
 
 **Enforced homes:**

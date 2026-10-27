@@ -12,8 +12,8 @@ fixes: []
 blocked_by: []
 relates: []
 ---
-# Promote useful .tmp/scan scripts into tracked code
+# Track the BLE reference tooling
 
-scan.py, gatt.py and live_test.py live in git-ignored .tmp/scan/. Once the platform is chosen, move the useful parts (CRC16/XMODEM framing, hello, state parsing) into tracked code under a declared home in STRUCTURE.md Layout, with tests. Blocked on the platform decision.
+The useful BLE protocol, client, camera, and proof-runner code and their tests are tracked under `src/research/ble/`. Run the reference through `scripts/owner/prove-light-commands.ps1`.
 
-Completed: the useful reference code and tests are tracked under `src/research/ble/`.
+Completed: framing, hello, state parsing, connection handling, visible proof orchestration, and tests have declared homes in `STRUCTURE.md`.

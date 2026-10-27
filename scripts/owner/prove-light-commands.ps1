@@ -46,11 +46,15 @@ $mode = if ($DryRun) { '--dry' } elseif ($Check) { '--check' } else { '--run' }
 Write-Log "Prove light commands ($mode). Repo: $script:RepoRoot"
 
 if (-not $VenvPath) {
-  $candidates = @((Join-Path $script:RepoRoot '.tmp\scan\.venv'))
+  $candidates = @((Join-Path $script:RepoRoot '.venv'))
   $git = Find-Tool 'git'
   if ($git) {
     $common = (& $git -C $script:RepoRoot rev-parse --path-format=absolute --git-common-dir 2>$null)
-    if ($common) { $candidates += (Join-Path (Split-Path -Parent ([string]$common)) '.tmp\scan\.venv') }
+    if ($common) {
+      $mainCheckout = Split-Path -Parent ([string]$common)
+      $candidates += (Join-Path $mainCheckout '.venv')
+      $candidates += (Join-Path (Join-Path $mainCheckout '.tmp\scan') '.venv')
+    }
   }
   $VenvPath = $candidates | Where-Object { Test-Path -LiteralPath (Join-Path $_ 'Scripts\python.exe') } | Select-Object -First 1
 }
