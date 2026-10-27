@@ -9,3 +9,7 @@ __pycache__/
 docs/plans/*.events.jsonl
 docs/plans/*.job.json
 docs/plans/*.stderr.log
+/src/mobile/android/.gradle/
+/src/mobile/android/.kotlin/
+/src/mobile/android/**/build/
+/src/mobile/android/local.properties
