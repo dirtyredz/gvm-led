@@ -120,7 +120,7 @@ Conclusions:
 
 ## Live test prep (2026-10-26)
 
-Script: `.tmp/scan/live_test.py` (`--dry`, `--check`, `--run`; logs to `.tmp/owner-runs/live-test-<timestamp>.log`). Re-read of the legacy path (`Util/ControlUtil.java`, `Util/CRC16.java`, `Service/BLEService.java`, `Util/Str.java`, `Activity/MainActivity.java`).
+Scripts: `src/research/ble/` (`live_test.py --dry`, `--check`, `--run`; logs to `.tmp/owner-runs/live-test-<timestamp>.log`) and `scripts/owner/prove-light-commands.ps1`. Re-read of the legacy path (`Util/ControlUtil.java`, `Util/CRC16.java`, `Service/BLEService.java`, `Util/Str.java`, `Activity/MainActivity.java`).
 
 **Big correction: the legacy path does NOT carry the mesh commands (A1/A2/C1-C3/5A/5B).** It is a separate, coarser command set. Sections 2-3 above (DP 101 payloads, 0.1 % intensity, 1 deg hue) apply to the mesh path only.
 
