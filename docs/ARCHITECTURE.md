@@ -6,10 +6,12 @@ A controller talks directly to each light over BLE; no cloud, no mesh, no pairin
 ## Android slice 1
 `src/mobile/android/` is an independent Compose app. MainActivity composes a placeholder
 LightsScreen inside a Material 3 root surface. There are no sessions, permissions or control actions yet.
-The Android-free `protocol/` package owns CRC, outgoing framing and typed hello/full/short replies.
-Each future connection owns its own LegacyFrameDecoder, calling reset on disconnect. It accepts
-only exact known lengths, markers, CRCs and valid state fields; partial input is bounded to 17 bytes.
-Resynchronization can skip a truncated candidate when a later complete valid frame arrives.
+The Android-free `protocol/` package owns shared frame constants, CRC, outgoing framing and typed
+hello/full/short replies. Each future connection owns its own LegacyFrameDecoder, calling reset on
+disconnect. The decoder bounds buffering to 17 bytes, resynchronizes the byte stream and verifies
+frame length and CRC before handing a complete frame to LegacyMessageParser. The parser dispatches
+payload validation to the reply type that owns it. Resynchronization can skip a truncated candidate
+when a later complete valid frame arrives.
 Only a decoded FullStateReport can be acknowledged, preserving all nine payload bytes.
 ShortStateReply has no mode/HSI fields and cannot serve as full-state confirmation.
 

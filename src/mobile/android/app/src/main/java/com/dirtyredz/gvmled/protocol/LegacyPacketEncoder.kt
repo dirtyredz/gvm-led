@@ -20,9 +20,14 @@ object LegacyPacketEncoder {
 
     private fun frame(deviceId: Int, deviceType: Int, body: ByteArray): ByteArray {
         require(deviceId in 0..255 && deviceType in 0..255) { "Device identity must fit wire bytes" }
-        // LEN includes ID, type, body and both CRC bytes; it excludes header and trailing FF.
-        val bytes = byteArrayOf(0x4c, 0x54, (body.size + 4).toByte(), deviceId.toByte(), deviceType.toByte()) + body
+        val bytes = byteArrayOf(
+            LegacyFrame.HEADER_FIRST.toByte(),
+            LegacyFrame.HEADER_SECOND.toByte(),
+            LegacyFrame.lengthForBody(body.size).toByte(),
+            deviceId.toByte(),
+            deviceType.toByte(),
+        ) + body
         val crc = Crc16Xmodem.calculate(bytes)
-        return bytes + byteArrayOf((crc ushr 8).toByte(), crc.toByte(), 0xff.toByte())
+        return bytes + byteArrayOf((crc ushr 8).toByte(), crc.toByte(), LegacyFrame.TRAILER.toByte())
     }
 }
