@@ -176,3 +176,7 @@ Run: `src/research/ble/live_test.py --run --camera` via `scripts/owner/prove-lig
 - **0x48 ack** (kind 48 + echoed 0x03 payload) provoked no visible error; the lights kept reporting.
 - A camera check after the run showed both lights warm white, matching the final step.
 - Tooling note: the per-step Agent Eye shots failed in this run (`snapshot.mjs shot` prints `log:`, a JSON line, then `OK ...`; camera.py now parses the `{` line).
+
+### Photo check of the re-run (2026-10-26, run `live-test-20261026-205223`, Agent Eye, all 17 frames)
+
+Light 1 = right fixture and light 2 = left fixture, as the camera sees them. Frames match the reports: step 01 right red, left unchanged; 02 right blue; 03 right paler; 04 left green, right unchanged; 05 both magenta; 06 warm vs 07 cool; 10–12 both dark (sets and the mode change while off stay dark); 13 only the right one on; 15 both amber after reconnect (the colour-bug fix, seen on camera); 16 both warm white. Not visually confirmed: scenes 19/20 (frames 08/09 overexposed) and step 14, where light 2 reported on (scene 20, 0.5 s) but looked dark in the frame, probably a flashing scene caught mid-blink.
