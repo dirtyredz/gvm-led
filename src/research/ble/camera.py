@@ -13,6 +13,14 @@ from pathlib import Path
 DEFAULT_SNAPSHOT = Path(os.environ.get("AGENT_EYE_SNAPSHOT", r"C:\Users\dirty\projects\agent-eye\src\camera\snapshot.mjs"))
 
 
+def parse_shot_path(stdout: str) -> str:
+    """`shot` prints `log: <path>`, then one JSON line, then `OK (exit 0) ...`; take the line starting with `{`."""
+    for line in stdout.splitlines():
+        if line.strip().startswith("{"):
+            return json.loads(line)["path"]
+    raise ValueError("no JSON line in shot output")
+
+
 class Camera:
     def __init__(self, say, run_dir: Path, run_name: str, snapshot: Path = DEFAULT_SNAPSHOT, dry=False):
         self.say, self.run_dir, self.run_name, self.snapshot, self.dry = say, run_dir, run_name, Path(snapshot), dry
@@ -38,7 +46,7 @@ class Camera:
             res = self._node("shot")
             if res.returncode != 0:
                 raise RuntimeError(f"shot exit {res.returncode}: {self._scrub(res.stderr or res.stdout)}")
-            src = Path(json.loads(res.stdout.strip().splitlines()[-1])["path"])
+            src = Path(parse_shot_path(res.stdout))
             self.run_dir.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(src, dest)
             self.say(f"CAMERA step {step:02d} image: {dest}")

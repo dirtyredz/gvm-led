@@ -163,3 +163,16 @@ Replies received on the first framing tried (trailing FF on) from both lights, s
 | light 2 | `94:C9:60:EB:67:E6` | type 33, on, HSI, hue 240, sat 100 %, brightness 34 %, (CCT byte 3600 K, inactive), pick 11 |
 
 Notes: Windows needs a scan hit before connect (script scans first); connects must be sequential and sometimes need a retry ("Characteristic not found" right after a disconnect). Phone app must be closed.
+
+## Visible proof run (2026-10-26)
+
+Run: `src/research/ble/live_test.py --run --camera` via `scripts/owner/prove-light-commands.ps1`; log `.tmp/owner-runs/live-test-20261026-204635.log`. Both lights type 33, phone app closed. Result: 0 mismatches between wanted values and fresh 0x03 reports on every step.
+
+- **All set commands work on both lights**: power (00), mode (06), hue (04), saturation (05), brightness (02), CCT (03), scene (07), effect time (08). Each set is answered by a short kind-02 echo `4C 54 08 ID TYPE 02 00 CMD VAL CRC`; the next full 0x03 report confirms the stored values.
+- **CCT endpoints** are the hello range, 3200-5600 K (hello bytes `20`/`38`); both endpoints were accepted and reported back.
+- **Scenes 19 and 20** with effect times were accepted and reported (scene and time fields).
+- **While off**: the light accepts and stores parameter and mode changes. A mode change does NOT turn it on. Power-on then shows the stored values. Power ordering for the app: send the full settings, then power on last; either order works.
+- **Colour-bug check passed**: disconnect, 5 s, reconnect, hello, then mode-first HSI amber (06=02, hue, sat, brightness) gave a matching report on both lights with no CCT detour.
+- **0x48 ack** (kind 48 + echoed 0x03 payload) provoked no visible error; the lights kept reporting.
+- A camera check after the run showed both lights warm white, matching the final step.
+- Tooling note: the per-step Agent Eye shots failed in this run (`snapshot.mjs shot` prints `log:`, a JSON line, then `OK ...`; camera.py now parses the `{` line).
