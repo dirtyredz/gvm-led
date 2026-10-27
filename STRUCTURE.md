@@ -17,6 +17,8 @@ See [ARCHITECTURE](docs/ARCHITECTURE.md).
 docs/
 ├── research/    # protocol write-up (static analysis + live findings)
 └── items/       # Docket work items (dk only)
+src/
+└── research/ble/  # Python reference + visible proof run (bleak)
 scripts/
 └── owner/       # owner-run PowerShell steps and plumbing
 .tmp/            # git-ignored: scan scripts, decompiled app, logs
@@ -24,13 +26,14 @@ scripts/
 
 **Enforced homes:**
 
-- `scripts/owner/` — owner-run .ps1 steps (owner-run.ps1 1.0.0 copied verbatim from ~/.claude/templates/scripts)
+- `src/research/ble/` — Python reference for the legacy protocol: `protocol.py` (framing, CRC, state decode; pure), `client.py` (one light's connection, hello, ack), `camera.py` (Agent Eye capture), `live_test.py` (visible proof orchestration), `test_protocol.py` (unittest), `requirements.txt` (pinned bleak)
+- `scripts/owner/` — owner-run .ps1 steps (owner-run.ps1 1.0.0 copied verbatim from ~/.claude/templates/scripts); `prove-light-commands.ps1` runs the slice-0 proof
 
 ## Components
 
 - **Research** — `docs/research/protocol.md`: source of truth for the protocol.
 - **Owner-run plumbing** — `scripts/owner/`: logging/dry-run wrapper plus an example step and test.
-- **Prototype scripts** — `.tmp/scan/{scan,gatt,live_test}.py` (Python + bleak), untracked until the platform is chosen.
+- **BLE reference** — `src/research/ble/`; `.tmp/scan/{scan,gatt}.py` remain untracked prototypes.
 
 ## Where to find things
 
@@ -38,6 +41,6 @@ Protocol framing, commands, lights' addresses: `docs/research/protocol.md`. Work
 
 ## Structural debt
 
-Prototype scripts are untracked in `.tmp/scan/` (dk-5f0c19af).
+`.tmp/scan/{scan,gatt}.py` are still untracked (dk-5f0c19af); live_test was promoted.
 
 _Living doc — refresh with /project-docs when it drifts._

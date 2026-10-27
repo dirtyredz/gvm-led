@@ -1,0 +1,2 @@
+# Pinned to the version proven on the research machine (.tmp/scan/.venv, 2026-10-26).
+bleak==3.0.2
