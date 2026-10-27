@@ -6,6 +6,9 @@
 - **The smaller app graph needs extra checksums:** CD metadata did not include annotation-jvm 1.8.1,
   collection-jvm 1.4.2, concurrent-futures 1.0.0 metadata or tracing 1.2.0. Slice 1 records their
   cached checksums (JAR/AAR hashes also match cached module metadata), without changing version pins.
+  The complete lint graph additionally needs the cached listenablefuture 1.0 JAR and Lifecycle 2.6.2
+  common/runtime module descriptors; their cache-key SHA-1s and content coordinates were checked
+  before recording their SHA-256 values.
 - **Wire inputs are untrusted:** reject bad CRC, unsupported lengths/markers and invalid fields before
   consuming capabilities/state. Reset each decoder on connection retirement; short replies are not full state.
 - **Vector provenance:** this checkout's protocol.md ends after read-only checks, without set TX logs.
