@@ -3,6 +3,16 @@
 ## Overview
 A controller talks directly to each light over BLE; no cloud, no mesh, no pairing.
 
+## Android slice 1
+`src/mobile/android/` is an independent Compose app. MainActivity composes a placeholder
+LightsScreen inside a Material 3 root surface. There are no sessions, permissions or control actions yet.
+The Android-free `protocol/` package owns CRC, outgoing framing and typed hello/full/short replies.
+Each future connection owns its own LegacyFrameDecoder, calling reset on disconnect. It accepts
+only exact known lengths, markers, CRCs and valid state fields; partial input is bounded to 17 bytes.
+Resynchronization can skip a truncated candidate when a later complete valid frame arrives.
+Only a decoded FullStateReport can be acknowledged, preserving all nine payload bytes.
+ShortStateReply has no mode/HSI fields and cannot serve as full-state confirmation.
+
 ## Link
 - Light advertises as `BT_LED`, Telink SoC (USB VID 0x248A). Address is the per-light identity.
 - Service `00010203-0405-0607-0809-0a0b0c0d1910`, characteristic `...2b10` (notify, write-without-response, read).

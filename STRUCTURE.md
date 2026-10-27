@@ -3,8 +3,8 @@
 ## Overview
 
 Custom controller for two GVM 800D3X-RGB lights over the legacy plain BLE GATT path. The tracked
-BLE reference and owner-run proof tooling are complete. Native Android is the chosen app platform;
-its first implementation slice is in progress on a separate branch.
+BLE reference and owner-run proof tooling are complete. Slice 1 provides the native Android
+application scaffold and pure packet codec. BLE sessions and controls remain future slices.
 
 ## Architecture at a glance
 
@@ -12,6 +12,14 @@ Native Android app -> BLE GATT write-without-response to one characteristic per 
 See [ARCHITECTURE](docs/ARCHITECTURE.md).
 
 ## Layout
+
+- `src/mobile/android/` — independent pinned Gradle build, wrapper and dependency verification.
+- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/` — Android activity composition.
+- Its `protocol/` package — Android-free CRC, packet encoding, typed replies and bounded frame decoding.
+- Its `feature/lights/` package — placeholder rendering; `ui/theme/` — Material 3 root surface.
+- `src/mobile/android/app/src/main/res/` — application strings, theme, launcher and backup policy.
+- `src/mobile/android/app/src/test/java/com/dirtyredz/gvmled/protocol/` — mirrored JUnit codec tests.
+- `.github/workflows/ci.yml` — strict Android unit, debug assembly and lint gate; no publication.
 
 ```
 docs/

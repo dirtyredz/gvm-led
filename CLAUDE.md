@@ -5,8 +5,12 @@ CRC16/XMODEM framed `4C 54` packets). Goal: avoid the official app's colour-mode
 
 ## Working here
 - Source of truth: `docs/research/protocol.md`. Docs: `STRUCTURE.md`, `docs/{ARCHITECTURE,DECISIONS,FEATURES,ROADMAP,GOTCHAS}.md`. Read GOTCHAS before touching BLE code.
-- Native Android is the chosen app platform; slice 1 is in progress on a separate branch. The Python
-  3.12 + bleak reference lives in `src/research/ble/` and runs through
+- Android scaffold and pure Kotlin protocol codec: `src/mobile/android/` (Command Deck toolchain).
+- Fast gate (Java 21, `ANDROID_HOME` pointing to an installed SDK 36 / build-tools 35.0.0):
+  `src\mobile\android\gradlew.bat -p src\mobile\android --offline --no-daemon --dependency-verification strict testDebugUnitTest assembleDebug lintDebug`.
+  Afterwards: `src\mobile\android\gradlew.bat -p src\mobile\android --stop`.
+  The wrapper distribution and dependencies must already be cached for offline builds.
+- The Python 3.12 + bleak reference lives in `src/research/ble/` and runs through
   `scripts/owner/prove-light-commands.ps1` (`-DryRun`, `-Check`, `-Camera`).
 - Hardware tests need the phone app closed and the lights in range; run them one connection at a time.
 - Owner-run steps are `.ps1` files in `scripts/owner/` built on `owner-run.ps1` (dry-run, logs to `.tmp/owner-runs/`).

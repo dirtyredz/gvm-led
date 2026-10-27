@@ -24,6 +24,8 @@ class LegacyFrameDecoderTest {
             message.saturation, message.mode, message.scene, message.effectTime,
         ))
         val ack = LegacyPacketEncoder.acknowledge(message)
+        // Expected CRC independently calculated with a PowerShell XMODEM implementation.
+        assertArrayEquals(hex("4C 54 0E 00 33 48 01 0B 07 2C 47 64 02 01 01 0F 02 FF"), ack)
         assertEquals(0x48, ack[5].toInt())
         assertArrayEquals(report.copyOfRange(6, 15), ack.copyOfRange(6, 15))
         assertEquals(14, ack[2].toInt())
@@ -78,12 +80,16 @@ class LegacyFrameDecoderTest {
     }
 
     @Test fun shortReplyIsADistinctType() {
-        val reply = LegacyFrameDecoder().feed(frame("4C 54 0B 00 33 02 00 00 01 0B 07 2C")).single()
+        // Real short RX from live-test-20261026-001316.log, not a generated expectation.
+        val reply = LegacyFrameDecoder().feed(hex("4C 54 0B 00 33 02 00 00 01 0B 07 2C 64 61")).single()
         assertTrue(reply is ShortStateReply)
         reply as ShortStateReply
         assertEquals(11, reply.pick)
         assertEquals(7, reply.brightness)
         assertEquals(44, reply.cct)
+        val other = LegacyFrameDecoder().feed(hex("4C 54 0B 00 33 02 00 00 01 0B 22 24 1C 7A")).single() as ShortStateReply
+        assertEquals(34, other.brightness)
+        assertEquals(36, other.cct)
     }
 
     @Test fun validCrcDoesNotMakeMalformedMessagesValid() {
@@ -97,6 +103,11 @@ class LegacyFrameDecoderTest {
             "4C 54 0E 00 33 03 01 0B 07 2C 49 64 02 01 01", // hue
             "4C 54 0E 00 33 03 01 0B 07 2C 47 65 02 01 01", // saturation
             "4C 54 0E 00 33 03 01 0B 07 2C 47 64 04 01 01", // mode
+            "4C 54 0E 00 33 03 01 00 07 2C 47 64 02 01 01", // pick
+            "4C 54 0E 00 33 03 01 0B 07 00 47 64 02 01 01", // CCT
+            "4C 54 0E 00 33 03 01 0B 07 2C 47 64 03 00 01", // active scene
+            "4C 54 0E 00 33 03 01 0B 07 2C 47 64 03 15 01", // scene range
+            "4C 54 0E 00 33 03 01 0B 07 2C 47 64 03 01 33", // time range
             "4C 54 0A 00 33 03 00 00 02 20 38", // kind/length mismatch
         )
         for (body in malformed) {

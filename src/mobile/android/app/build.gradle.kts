@@ -50,6 +50,11 @@ tasks.configureEach {
     }
 }
 dependencies {
+    // Keep the Compose/activity transitive runtime on the same supporting-library pins as CD.
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.kotlinx.coroutines.android)
+    constraints { implementation(libs.kotlinx.serialization.core) }
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
