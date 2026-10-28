@@ -184,6 +184,25 @@ class ConnectionCoordinatorTest {
         assertEquals(1, rig.scanner.activeScans)
     }
 
+    @Test fun immediateStopThenStartNeverOpensTwoTransportsForAnAddress() = runTest {
+        val rig = rig(initial = listOf(light1))
+        rig.coordinator.start()
+        runCurrent()
+        rig.advertise(light1)
+        runCurrent()
+
+        rig.coordinator.stop()
+        rig.coordinator.start()
+        runCurrent()
+        rig.advertise(light1)
+        runCurrent()
+
+        assertEquals(1, rig.transports.maxOpenByAddress[light1])
+        assertEquals(2, rig.transports.created.size)
+        assertTrue(rig.transports.created.first().closed)
+        assertFalse(rig.transports.created.last().closed)
+    }
+
     @Test fun bluetoothTurningOffClosesLinks() = runTest {
         val rig = rig()
         rig.coordinator.start()

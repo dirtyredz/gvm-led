@@ -1,6 +1,5 @@
 package com.dirtyredz.gvmled.update
 
-import com.dirtyredz.gvmled.data.json.JsonObject
 import java.io.File
 
 /** The running app's identity as Android reports it. [signers] are lowercase SHA-256 certificate digests. */
@@ -20,8 +19,17 @@ data class ArchiveIdentity(
     val signers: Set<String>,
 )
 
-/** A release asset as listed by GitHub; [url] has already been checked against the contract. */
+/** A release asset as listed by GitHub; [url] remains untrusted until [ReleasePolicy] accepts it. */
 data class ReleaseAsset(val name: String, val size: Long, val url: String)
+
+/** GitHub's release listing decoded by the remote adapter, before repository policy is applied. */
+data class ReleaseListing(
+    val tag: String,
+    val pageUrl: String,
+    val draft: Boolean,
+    val prerelease: Boolean,
+    val assets: List<ReleaseAsset>,
+)
 
 /** Why a network step failed, in the terms the Settings screen explains. */
 enum class NetworkProblem { Offline, Timeout, RateLimited, NoRelease, Server, Refused, TooLarge, Integrity }
@@ -35,7 +43,7 @@ class UpdateNetworkException(
 
 /** GitHub release metadata (`data/remote/GitHubReleaseClient`). Throws [UpdateNetworkException]. */
 interface ReleaseSource {
-    suspend fun latestRelease(): JsonObject
+    suspend fun latestRelease(): ReleaseListing
 
     /** A small asset's complete bytes, never more than [maxBytes]. */
     suspend fun smallAsset(asset: ReleaseAsset, maxBytes: Long): ByteArray

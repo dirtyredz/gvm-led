@@ -1,11 +1,10 @@
 package com.dirtyredz.gvmled.update
 
-import com.dirtyredz.gvmled.data.json.JsonObject
 import com.dirtyredz.gvmled.update.UpdateFixtures.archive
 import com.dirtyredz.gvmled.update.UpdateFixtures.asset
 import com.dirtyredz.gvmled.update.UpdateFixtures.contract
 import com.dirtyredz.gvmled.update.UpdateFixtures.installed
-import com.dirtyredz.gvmled.update.UpdateFixtures.releaseJson
+import com.dirtyredz.gvmled.update.UpdateFixtures.releaseListing
 import java.io.File
 import java.security.MessageDigest
 import kotlinx.coroutines.CompletableDeferred
@@ -32,7 +31,7 @@ class UpdateControllerTest {
 
     private inner class Rig(scope: TestScope) {
         var installedApp = installed(versionCode = 2)
-        var latest: suspend () -> JsonObject = { releaseJson(versionCode = 3) }
+        var latest: suspend () -> ReleaseListing = { releaseListing(versionCode = 3) }
         var manifestBytes = UpdateFixtures.manifestJson(versionCode = 3, sha256 = apkSha).toByteArray()
         var downloadGate: CompletableDeferred<Unit>? = null
         var downloadFailure: UpdateNetworkException? = null
@@ -44,7 +43,7 @@ class UpdateControllerTest {
         val effects = mutableListOf<UpdateEffect>()
 
         private val source = object : ReleaseSource {
-            override suspend fun latestRelease(): JsonObject {
+            override suspend fun latestRelease(): ReleaseListing {
                 releaseRequests++
                 return latest()
             }
@@ -109,7 +108,7 @@ class UpdateControllerTest {
     @Test fun repeatedTapsAndReattachmentNeverDuplicateACheck() = runTest {
         val rig = rig()
         val gate = CompletableDeferred<Unit>()
-        rig.latest = { gate.await(); releaseJson(versionCode = 3) }
+        rig.latest = { gate.await(); releaseListing(versionCode = 3) }
         rig.controller.check()
         rig.controller.check()
         runCurrent()
@@ -124,7 +123,7 @@ class UpdateControllerTest {
     @Test fun leavingTheForegroundCancelsACheckAndALateAnswerIsIgnored() = runTest {
         val rig = rig()
         val gate = CompletableDeferred<Unit>()
-        rig.latest = { gate.await(); releaseJson(versionCode = 3) }
+        rig.latest = { gate.await(); releaseListing(versionCode = 3) }
         rig.controller.check()
         runCurrent()
         rig.controller.onBackground()
@@ -135,7 +134,7 @@ class UpdateControllerTest {
 
     @Test fun aMissingManifestOffersOnlyTheReleasePage() = runTest {
         val rig = rig()
-        rig.latest = { releaseJson(assets = listOf(asset("android-v0.1.2", "GVM-LED-0.1.2-android.apk", 4))) }
+        rig.latest = { releaseListing(assets = listOf(asset("android-v0.1.2", "GVM-LED-0.1.2-android.apk", 4))) }
         rig.controller.check()
         runCurrent()
         val status = rig.status as UpdateStatus.MetadataUnavailable
@@ -341,7 +340,7 @@ class UpdateControllerTest {
     }
 
     private object NoSource : ReleaseSource {
-        override suspend fun latestRelease(): JsonObject = error("no network in this test")
+        override suspend fun latestRelease(): ReleaseListing = error("no network in this test")
         override suspend fun smallAsset(asset: ReleaseAsset, maxBytes: Long): ByteArray = error("no network in this test")
     }
 }
