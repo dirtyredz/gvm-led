@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.light.control
 
+import com.dirtyredz.gvmled.light.connection.Vectors
 import com.dirtyredz.gvmled.light.protocol.FullStateReport
 import com.dirtyredz.gvmled.light.protocol.LegacyFrameDecoder
 import com.dirtyredz.gvmled.light.protocol.hex
@@ -25,6 +26,13 @@ class StateMatcherTest {
     @Test fun hsiWantedMatchesTheHsiReport() {
         assertTrue(StateMatcher.matches(wantedHsi, hsi))
         assertEquals(emptyList<String>(), StateMatcher.mismatches(wantedHsi, hsi))
+    }
+
+    @Test fun reportedFullCircleHueMatchesZeroHue() {
+        val fullCircle = LegacyFrameDecoder().feed(
+            Vectors.framed("4C 54 0E 00 33 03 01 0B 32 2C 48 64 02 01 01"),
+        ).single() as FullStateReport
+        assertTrue(StateMatcher.matches(wantedHsi.copy(hue = 0), fullCircle))
     }
 
     @Test fun inactiveCctIsIgnoredInHsiMode() {

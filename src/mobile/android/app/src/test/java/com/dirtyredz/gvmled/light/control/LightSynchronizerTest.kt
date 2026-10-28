@@ -107,6 +107,22 @@ class LightSynchronizerTest {
         assertEquals(ApplyStatus.Confirmed(2), rig.sync.status.value)
     }
 
+    @Test fun fullCircleHueReportConfirmsZeroHueWithoutRetry() = runTest {
+        val zeroHue = amber.copy(hue = 0)
+        val light = SimulatedLight(hue = 72, saturation = 100)
+        val rig = rig(WantedRecord(2, zeroHue), light)
+        runCurrent()
+        advanceTimeBy(1_500)
+        assertEquals(hsiSequence.map { if (it.first == LegacyCommand.HUE) it.first to 0 else it }, light.written)
+
+        light.hue = 72 // the light reports 360 degrees for the commanded zero-degree colour
+        rig.report()
+        runCurrent()
+        assertEquals(ApplyStatus.Confirmed(2), rig.sync.status.value)
+        advanceTimeBy(6_500)
+        assertEquals("confirmation prevents a retry", 5, light.written.size)
+    }
+
     @Test fun aShortReplyNeverConfirmsAndThreeSilentRoundsEndInNotConfirmedThenReconnect() = runTest {
         val rig = rig(WantedRecord(2, amber))
         runCurrent()

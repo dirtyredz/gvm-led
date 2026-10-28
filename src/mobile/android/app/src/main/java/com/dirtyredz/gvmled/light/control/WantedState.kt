@@ -65,7 +65,7 @@ data class WantedState(
                 mode = mode,
                 brightness = report.brightness,
                 cct = report.cct.takeIf { it in range },
-                hue = Field.Hue.normalize(report.hue),
+                hue = Field.Hue.read(report),
                 saturation = report.saturation,
                 scene = report.scene.takeIf(SceneCatalog::isSupported),
                 effectTime = report.effectTime.takeIf { it in SceneCatalog.EFFECT_TIMES },

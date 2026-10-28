@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.light.control
 
+import com.dirtyredz.gvmled.light.protocol.FullStateReport
 import com.dirtyredz.gvmled.light.protocol.LegacyCommand
 import com.dirtyredz.gvmled.light.protocol.SceneCatalog
 import com.dirtyredz.gvmled.light.protocol.SetCommand
@@ -93,4 +94,13 @@ enum class Field(val label: String, val command: Int, val limits: IntRange) {
         Scene -> state.scene
         EffectTime -> state.effectTime
     }
+
+    /** Reads the corresponding report field in the same normalized units as wanted state. */
+    fun read(report: FullStateReport): Int = normalize(when (this) {
+        Cct -> report.cct
+        Hue -> report.hue
+        Saturation -> report.saturation
+        Scene -> report.scene
+        EffectTime -> report.effectTime
+    })
 }

@@ -16,18 +16,10 @@ object StateMatcher {
         if (report.mode != wanted.mode.wire) out += "mode"
         if (report.brightness != wanted.brightness) out += "brightness"
         for (field in ModeCommandPlanner.required(wanted)) {
-            if (reported(field, report) != field.read(wanted)) out += field.label
+            if (field.read(report) != field.read(wanted)) out += field.label
         }
         return out
     }
 
     fun matches(wanted: WantedState, report: FullStateReport): Boolean = mismatches(wanted, report).isEmpty()
-
-    private fun reported(field: Field, report: FullStateReport): Int = when (field) {
-        Field.Cct -> report.cct
-        Field.Hue -> report.hue
-        Field.Saturation -> report.saturation
-        Field.Scene -> report.scene
-        Field.EffectTime -> report.effectTime
-    }
 }
