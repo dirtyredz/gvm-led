@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.light.connection
 
+import com.dirtyredz.gvmled.data.model.BluetoothAddress
 import com.dirtyredz.gvmled.light.protocol.FullStateReport
 import com.dirtyredz.gvmled.light.protocol.HelloReply
 import com.dirtyredz.gvmled.light.protocol.LegacyFrameDecoder
@@ -49,7 +50,7 @@ class LightSession(
     private val timing: SessionTiming = SessionTiming(),
     private val log: (String) -> Unit = {},
 ) {
-    val address: String = normalizeAddress(address)
+    val address: String = BluetoothAddress.normalize(address)
 
     private val mutableState = MutableStateFlow(LightConnection(this.address))
     val state: StateFlow<LightConnection> = mutableState.asStateFlow()
@@ -93,7 +94,7 @@ class LightSession(
             reachedLive = true
             val paced = checkNotNull(writer)
             val live = Port(generation, hello, link, paced)
-            mutableState.update { it.copy(status = LinkStatus.Live, hello = hello) }
+            mutableState.update { it.copy(status = LinkStatus.Live, hello = hello, helloGeneration = generation) }
             mutablePort.value = live
             log("$address live: type ${hello.deviceType}, ${hello.minCctKelvin}-${hello.maxCctKelvin} K")
             val ended = receive(link, paced, hello, generation, pending)

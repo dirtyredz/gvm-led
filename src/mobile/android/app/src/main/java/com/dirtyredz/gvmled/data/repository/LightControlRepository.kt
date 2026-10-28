@@ -4,7 +4,7 @@ import com.dirtyredz.gvmled.data.local.WantedStateCodec
 import com.dirtyredz.gvmled.data.local.WantedStateFormatException
 import com.dirtyredz.gvmled.data.model.ControlTarget
 import com.dirtyredz.gvmled.data.model.LightCatalog
-import com.dirtyredz.gvmled.light.connection.normalizeAddress
+import com.dirtyredz.gvmled.data.model.BluetoothAddress
 import com.dirtyredz.gvmled.light.control.CctRange
 import com.dirtyredz.gvmled.light.control.EditPlan
 import com.dirtyredz.gvmled.light.control.LightEdit
@@ -89,7 +89,7 @@ class LightControlRepository(
      * Returns the stored record, or null when the light already had intent or the save failed.
      */
     suspend fun seed(address: String, report: FullStateReport, range: CctRange): WantedRecord? = mutex.withLock {
-        val key = normalizeAddress(address)
+        val key = BluetoothAddress.normalize(address)
         if (mutableProblem.value != null || key in mutableWanted.value) return null
         val state: WantedState = WantedState.fromReport(report, range) ?: return null
         val record = WantedRecord(1, state)

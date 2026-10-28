@@ -9,7 +9,7 @@ import com.dirtyredz.gvmled.data.json.JsonNumber
 import com.dirtyredz.gvmled.data.json.JsonObject
 import com.dirtyredz.gvmled.data.json.JsonString
 import com.dirtyredz.gvmled.data.json.JsonValue
-import com.dirtyredz.gvmled.light.connection.normalizeAddress
+import com.dirtyredz.gvmled.data.model.BluetoothAddress
 import com.dirtyredz.gvmled.light.control.LightMode
 import com.dirtyredz.gvmled.light.control.Field
 import com.dirtyredz.gvmled.light.control.WantedRecord
@@ -71,7 +71,7 @@ object WantedStateCodec {
             val light = item as? JsonObject ?: corrupt()
             if (light.keys != RECORD_KEYS) corrupt()
             val address = light.string("address") ?: corrupt()
-            if (address != normalizeAddress(address) || address in records) corrupt()
+            if (!BluetoothAddress.isNormalized(address) || address in records) corrupt()
             records[address] = decodeRecord(light)
         }
         return records
@@ -84,7 +84,7 @@ object WantedStateCodec {
             mode = LightMode.fromWire(required(light, "mode")) ?: corrupt(),
             brightness = required(light, "brightness"),
             cct = optional(light, "cct"),
-            hue = optional(light, "hue"),
+            hue = optional(light, "hue")?.let(Field.Hue::normalize),
             saturation = optional(light, "saturation"),
             scene = optional(light, "scene"),
             effectTime = optional(light, "effectTime"),

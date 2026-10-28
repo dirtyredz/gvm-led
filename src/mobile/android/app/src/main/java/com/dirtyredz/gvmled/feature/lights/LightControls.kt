@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.dirtyredz.gvmled.light.control.Field
 import com.dirtyredz.gvmled.light.control.LightEdit
 import com.dirtyredz.gvmled.light.control.LightMode
 import com.dirtyredz.gvmled.light.control.Shared
@@ -94,9 +95,14 @@ internal fun CctSlider(values: TargetValues, apply: (LightEdit) -> Unit) {
 
 @Composable
 internal fun HsiSliders(values: TargetValues, apply: (LightEdit) -> Unit) {
-    // Hue 0-71 wire units = 0-355 degrees; 72 (360) is the same colour as 0.
-    SharedSlider("Hue", values.hue, 0..71, { "${it * 5}°" }, onCommit = { apply(LightEdit(hue = it)) })
+    SharedSlider("Hue", values.hue.normalize(Field.Hue), Field.Hue.limits, { "${it * 5}°" }, onCommit = { apply(LightEdit(hue = it)) })
     SharedSlider("Saturation", values.saturation, 0..100, { "$it %" }, onCommit = { apply(LightEdit(saturation = it)) })
+}
+
+private fun Shared<Int>.normalize(field: Field): Shared<Int> = when (this) {
+    is Shared.Same -> Shared.Same(field.normalize(value))
+    Shared.Mixed -> Shared.Mixed
+    Shared.Unknown -> Shared.Unknown
 }
 
 /**

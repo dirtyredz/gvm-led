@@ -21,7 +21,7 @@ data class LightEdit(
         mode = mode ?: base.mode,
         brightness = brightness ?: base.brightness,
         cct = pick(Field.Cct, cct, base.cct),
-        hue = pick(Field.Hue, hue, base.hue),
+        hue = pick(Field.Hue, hue, base.hue)?.let(Field.Hue::normalize),
         saturation = pick(Field.Saturation, saturation, base.saturation),
         scene = pick(Field.Scene, scene, base.scene),
         effectTime = pick(Field.EffectTime, effectTime, base.effectTime),

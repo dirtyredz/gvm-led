@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.light.control
 
+import com.dirtyredz.gvmled.light.protocol.FullStateReport
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -63,6 +64,13 @@ class TargetPlanningTest {
         val next = accepted(expand(listOf(a, b), LightEdit(mode = LightMode.Hsi, hue = 12, saturation = 40)))
         assertEquals(12, next.getValue(a).hue)
         assertEquals(12, next.getValue(b).hue)
+    }
+
+    @Test fun hueWrapsAt360DegreesForAdoptionAndEditing() {
+        val report = checkNotNull(FullStateReport.decode(0, 0x33, listOf(1, 1, 50, 44, 72, 100, 2, 0, 0)))
+        assertEquals(0, WantedState.fromReport(report, ranges.getValue(a))?.hue)
+        assertEquals(0, LightEdit(brightness = 60).applyTo(key.copy(hue = 72)).hue)
+        assertEquals(0..71, Field.Hue.limits)
     }
 
     @Test fun cctEditsNeedEveryMembersRangeAndMustFitEachOne() {

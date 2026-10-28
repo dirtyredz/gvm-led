@@ -37,8 +37,9 @@ data class CctRange(val min: Int, val max: Int) {
 }
 
 /**
- * What the app wants one light to show, in wire units: brightness and saturation 0-100, hue 0-72
- * (5-degree steps), CCT in 100 K steps, scene 1-20, effect time 1-50 (x100 ms). Every mode keeps its
+ * What the app wants one light to show, in wire units: brightness and saturation 0-100, hue 0-71
+ * (5-degree steps; a reported 72/360 degrees normalizes to 0), CCT in 100 K steps, scene 1-20,
+ * effect time 1-50 (x100 ms). Every mode keeps its
  * own values, so switching mode and back restores them. A null value is unknown, never a default.
  */
 data class WantedState(
@@ -64,7 +65,7 @@ data class WantedState(
                 mode = mode,
                 brightness = report.brightness,
                 cct = report.cct.takeIf { it in range },
-                hue = report.hue,
+                hue = Field.Hue.normalize(report.hue),
                 saturation = report.saturation,
                 scene = report.scene.takeIf(SceneCatalog::isSupported),
                 effectTime = report.effectTime.takeIf { it in SceneCatalog.EFFECT_TIMES },

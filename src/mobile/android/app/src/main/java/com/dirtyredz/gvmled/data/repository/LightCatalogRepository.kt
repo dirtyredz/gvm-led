@@ -1,6 +1,6 @@
 package com.dirtyredz.gvmled.data.repository
 
-import com.dirtyredz.gvmled.light.connection.normalizeAddress
+import com.dirtyredz.gvmled.data.model.BluetoothAddress
 import com.dirtyredz.gvmled.data.local.CatalogResolution
 import com.dirtyredz.gvmled.data.local.LightCatalogCodec
 import com.dirtyredz.gvmled.data.model.KnownLight
@@ -69,12 +69,12 @@ class LightCatalogRepository(
 
     /** Enrolls a discovered address under [name]. Not a compatibility claim: the session verifies it. */
     suspend fun addLight(address: String, name: String): CatalogResult = mutate { catalog ->
-        val normalized = normalizeAddress(address)
+        val normalized = BluetoothAddress.normalize(address)
         Change.Next(catalog.copy(lights = catalog.lights + KnownLight(normalized, name.trim())))
     }
 
     suspend fun rename(address: String, name: String): CatalogResult = mutate { catalog ->
-        val normalized = normalizeAddress(address)
+        val normalized = BluetoothAddress.normalize(address)
         if (catalog.light(normalized) == null) Change.Reject("That light is not saved")
         else Change.Next(catalog.copy(lights = catalog.lights.map { if (it.address == normalized) it.copy(name = name.trim()) else it }))
     }
@@ -138,7 +138,7 @@ class LightCatalogRepository(
 
     /** Catalog order and deduplicated; an address no longer saved is kept so validation reports it. */
     private fun cleanMembers(catalog: LightCatalog, members: Collection<String>): List<String> {
-        val chosen = members.map(::normalizeAddress).distinct()
+        val chosen = members.map(BluetoothAddress::normalize).distinct()
         return catalog.addresses.filter { it in chosen } + chosen.filter { catalog.light(it) == null }
     }
 }

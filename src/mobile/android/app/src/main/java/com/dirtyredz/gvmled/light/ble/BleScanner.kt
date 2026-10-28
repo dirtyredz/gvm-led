@@ -8,7 +8,7 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import com.dirtyredz.gvmled.light.connection.Advertisement
 import com.dirtyredz.gvmled.light.connection.LightScanner
-import com.dirtyredz.gvmled.light.connection.normalizeAddress
+import com.dirtyredz.gvmled.data.model.BluetoothAddress
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -30,7 +30,7 @@ class BleScanner(private val adapter: BluetoothAdapter) : LightScanner {
         val scanner = adapter.bluetoothLeScanner ?: throw IllegalStateException("LE scanner unavailable (Bluetooth off?)")
         val callback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
-                devices[normalizeAddress(result.device.address)] = result.device
+                devices[BluetoothAddress.normalize(result.device.address)] = result.device
                 trySend(
                     Advertisement(
                         address = result.device.address,
@@ -55,5 +55,5 @@ class BleScanner(private val adapter: BluetoothAdapter) : LightScanner {
 
     /** The scanned device when seen this process, else one built from the address. */
     fun deviceFor(address: String): BluetoothDevice =
-        devices[normalizeAddress(address)] ?: adapter.getRemoteDevice(normalizeAddress(address))
+        devices[BluetoothAddress.normalize(address)] ?: adapter.getRemoteDevice(BluetoothAddress.normalize(address))
 }

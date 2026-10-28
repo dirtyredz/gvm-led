@@ -30,6 +30,9 @@
 - **Rear knobs are disabled in app mode** (owner hardware fact, 0.1.1 test 2026-10-28): while a light is under app control its physical controls do nothing, so state cannot change from the light during an app session. Never use the knobs as a test or acceptance step; change state from this app, or beforehand from the official app or a power cycle.
 - **Reports arrive about every 4 s** after hello; an idle screen with a Live status is normal between them.
   All packets fit the default 23-byte MTU (largest is an 18-byte ack), so no MTU request is made.
+- **Hello capabilities are generation-current.** A retained hello is history after a link leaves Live;
+  CCT validation, group intersection and UI ranges use `LightConnection.currentHello`, so one offline
+  member disables combined CCT until every selected member has a live range again.
 
 - **Release: no pin, no release.** CI's `prepare` refuses while `signing-certificate.json` has no
   `certificateSha256`, because provenance binds the contract digest (which includes the pin): a draft

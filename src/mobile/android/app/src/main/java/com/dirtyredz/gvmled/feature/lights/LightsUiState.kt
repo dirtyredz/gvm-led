@@ -60,7 +60,7 @@ data class ObservedLightState(
 fun addressSuffix(address: String): String = address.takeLast(5)
 
 fun LightEntry.toCardModel(zone: ZoneId): LightCardModel {
-    val hello = connection.hello
+    val hello = connection.currentHello
     return LightCardModel(
         address = connection.address,
         addressSuffix = addressSuffix(connection.address),

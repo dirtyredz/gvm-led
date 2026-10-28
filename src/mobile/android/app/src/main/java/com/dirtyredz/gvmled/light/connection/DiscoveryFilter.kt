@@ -1,6 +1,6 @@
 package com.dirtyredz.gvmled.light.connection
 
-import java.util.Locale
+import com.dirtyredz.gvmled.data.model.BluetoothAddress
 
 /**
  * Decides what an advertisement means against the current configured set. Identity is the address:
@@ -8,12 +8,12 @@ import java.util.Locale
  * legacy service, so the custom service is never required here (it is validated after connecting).
  */
 class DiscoveryFilter(knownAddresses: Collection<String>) {
-    private val known = knownAddresses.map(::normalizeAddress).toSet()
+    private val known = knownAddresses.map(BluetoothAddress::normalize).toSet()
 
-    fun isKnown(address: String): Boolean = normalizeAddress(address) in known
+    fun isKnown(address: String): Boolean = BluetoothAddress.normalize(address) in known
 
     fun classify(advertisement: Advertisement): Sighting? {
-        val address = normalizeAddress(advertisement.address)
+        val address = BluetoothAddress.normalize(advertisement.address)
         return when {
             address in known -> Sighting.Known(address)
             advertisement.name?.contains(LEGACY_NAME) == true -> Sighting.OtherLegacyLight(address)
@@ -35,5 +35,3 @@ sealed interface Sighting {
     /** A `BT_LED` device that is not configured; offered for enrollment, never connected. */
     data class OtherLegacyLight(override val address: String) : Sighting
 }
-
-fun normalizeAddress(address: String): String = address.trim().uppercase(Locale.ROOT)

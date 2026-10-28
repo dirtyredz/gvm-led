@@ -74,14 +74,17 @@ object ModeCommandPlanner {
 }
 
 /** The mode-specific values of a [WantedState], with their set command and legal wire range. */
-enum class Field(val label: String, val command: Int, private val legal: IntRange) {
+enum class Field(val label: String, val command: Int, val limits: IntRange) {
     Cct("colour temperature", LegacyCommand.CCT, 1..255),
-    Hue("hue", LegacyCommand.HUE, 0..72),
+    Hue("hue", LegacyCommand.HUE, 0..71),
     Saturation("saturation", LegacyCommand.SATURATION, 0..100),
     Scene("scene", LegacyCommand.SCENE, SceneCatalog.IDS),
     EffectTime("effect time", LegacyCommand.EFFECT_TIME, SceneCatalog.EFFECT_TIMES);
 
-    fun isLegal(value: Int) = value in legal
+    fun isLegal(value: Int) = value in limits
+
+    /** The light may report hue 72 (360 degrees), which is the same editable colour as 0. */
+    fun normalize(value: Int): Int = if (this == Hue && value == 72) 0 else value
 
     fun read(state: WantedState): Int? = when (this) {
         Cct -> state.cct

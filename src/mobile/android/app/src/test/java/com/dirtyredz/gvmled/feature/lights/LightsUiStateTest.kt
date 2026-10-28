@@ -23,7 +23,7 @@ class LightsUiStateTest {
         LightEntry(connection, name).toCardModel(ZoneOffset.UTC)
 
     private fun live(report: FullStateReport) = LightConnection(
-        address = "94:C9:60:E5:D7:6F", status = LinkStatus.Live, generation = 1, hello = hello,
+        address = "94:C9:60:E5:D7:6F", status = LinkStatus.Live, generation = 1, hello = hello, helloGeneration = 1,
         report = report, reportGeneration = 1, reportAtMillis = 3_723_000L,
     )
 

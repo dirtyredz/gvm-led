@@ -37,7 +37,13 @@ class LightControlsStateTest {
     private val hsi = WantedState(true, LightMode.Hsi, 50, hue = 48, saturation = 100)
 
     private fun entry(address: String, name: String, state: WantedState?, apply: ApplyStatus, live: Boolean = true) = LightEntry(
-        connection = LightConnection(address, if (live) LinkStatus.Live else LinkStatus.Searching, generation = 1, hello = if (live) hello else null),
+        connection = LightConnection(
+            address,
+            if (live) LinkStatus.Live else LinkStatus.Searching,
+            generation = 1,
+            hello = hello,
+            helloGeneration = 1,
+        ),
         name = name,
         wanted = state?.let { WantedRecord(2, it) },
         apply = apply,
@@ -72,6 +78,13 @@ class LightControlsStateTest {
         assertEquals("Confirmed", state(ControlTarget.Light(a)).outcome)
         assertEquals(CctRange(32, 56), state(ControlTarget.Light(a)).controls!!.cctRange)
         assertNull(state(ControlTarget.Light(a)).controls!!.cctUnavailable)
+    }
+
+    @Test fun anOfflineMembersOldHelloCannotEnableGroupCct() {
+        val controls = state(ControlTarget.Group("g1")).controls!!
+        assertNull(controls.cctRange)
+        assertEquals("Fill has not reported its colour temperature range yet", controls.cctUnavailable)
+        assertNull(state(ControlTarget.Light(b)).lights.single().cctRange)
     }
 
     @Test fun modeSwitchFillsOnlyGapsWithCommonOrVisibleStartingValues() {

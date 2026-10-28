@@ -18,7 +18,7 @@ data class LightCatalog(val lights: List<KnownLight>, val groups: List<LightGrou
         val addresses = lights.map { it.address }
         val duplicateGroup = groups.groupBy { it.name.lowercase(Locale.ROOT) }.values.firstOrNull { it.size > 1 }
         return when {
-            addresses.any { !ADDRESS.matches(it) } -> "A light address is not a normalized Bluetooth address"
+            addresses.any { !BluetoothAddress.isNormalized(it) } -> "A light address is not a normalized Bluetooth address"
             addresses.toSet().size != addresses.size -> "That light is already added"
             lights.any { !isValidName(it.name) } -> NAME_RULE
             groups.any { it.id.isBlank() } || groups.map { it.id }.toSet().size != groups.size -> "Group IDs are not unique"
@@ -35,8 +35,6 @@ data class LightCatalog(val lights: List<KnownLight>, val groups: List<LightGrou
         const val MAX_NAME_LENGTH = 24
         const val NAME_RULE = "Use a name of 1 to $MAX_NAME_LENGTH characters"
         val EMPTY = LightCatalog(emptyList(), emptyList())
-        private val ADDRESS = Regex("[0-9A-F]{2}(:[0-9A-F]{2}){5}")
-
         fun isValidName(name: String) = name.isNotBlank() && name == name.trim() && name.length <= MAX_NAME_LENGTH
     }
 }

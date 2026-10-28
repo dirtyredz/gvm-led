@@ -31,6 +31,8 @@ data class LightConnection(
     val status: LinkStatus = LinkStatus.Idle,
     val generation: Int = 0,
     val hello: HelloReply? = null,
+    /** The connection generation that supplied [hello]; retained only as historical information. */
+    val helloGeneration: Int = 0,
     val report: FullStateReport? = null,
     val reportGeneration: Int = 0,
     val reportAtMillis: Long? = null,
@@ -38,6 +40,10 @@ data class LightConnection(
     val reportReceivedAtMillis: Long? = null,
     val lastError: String? = null,
 ) {
+    /** Capabilities of the live generation, or null while this light is offline or reconnecting. */
+    val currentHello: HelloReply?
+        get() = hello?.takeIf { status == LinkStatus.Live && helloGeneration == generation }
+
     val reportIsCurrent: Boolean
         get() = report != null && status == LinkStatus.Live && reportGeneration == generation
 }

@@ -48,6 +48,8 @@ class LightSessionTest {
         assertEquals(0x33, session.state.value.hello?.deviceType)
         assertEquals(3200, session.state.value.hello?.minCctKelvin)
         assertEquals(5600, session.state.value.hello?.maxCctKelvin)
+        assertEquals(session.state.value.hello, session.state.value.currentHello)
+        assertNull(session.state.value.copy(generation = 2).currentHello)
     }
 
     @Test fun helloRepeatsEverySecondWithinABoundedHandshake() = runTest {
@@ -142,6 +144,8 @@ class LightSessionTest {
         session.markWaiting("Disconnected (GATT status 8)")
         assertFalse(session.state.value.reportIsCurrent)
         assertEquals(7, session.state.value.report?.brightness) // kept, shown as stale
+        assertEquals(3200, session.state.value.hello?.minCctKelvin) // retained only as history
+        assertNull(session.state.value.currentHello) // capabilities are unavailable off-link
     }
 
     @Test fun connectTimeoutClosesTheTransport() = runTest {

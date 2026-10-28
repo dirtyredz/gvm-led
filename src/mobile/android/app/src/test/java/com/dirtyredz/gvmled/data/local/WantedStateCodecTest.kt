@@ -85,6 +85,10 @@ class WantedStateCodecTest {
 
     @Test fun outOfRangeHueIsRejected() = assertCorrupt(doc(light(over = mapOf("hue" to "73"))))
 
+    @Test fun legacy360DegreeHueNormalizesToZero() {
+        assertEquals(0, WantedStateCodec.decode(doc(light(over = mapOf("hue" to "72")))).getValue(a).state.hue)
+    }
+
     @Test fun outOfRangeBrightnessIsRejected() = assertCorrupt(doc(light(over = mapOf("brightness" to "101"))))
 
     @Test fun unknownModeIsRejected() = assertCorrupt(doc(light(over = mapOf("mode" to "4"))))

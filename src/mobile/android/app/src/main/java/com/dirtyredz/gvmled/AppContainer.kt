@@ -84,7 +84,7 @@ class AppContainer(context: Context) {
         store = WantedStatePreferences(app.getSharedPreferences("wanted", Context.MODE_PRIVATE)),
         io = Dispatchers.IO,
         catalog = catalog.catalog,
-        ranges = { coordinator.lights.value.associate { it.address to it.hello?.let(CctRange::of) } },
+        ranges = { coordinator.lights.value.associate { it.address to it.currentHello?.let(CctRange::of) } },
     )
 
     val synchronizers = LightSynchronizers(

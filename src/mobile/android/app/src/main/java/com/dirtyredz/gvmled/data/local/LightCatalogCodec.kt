@@ -1,6 +1,6 @@
 package com.dirtyredz.gvmled.data.local
 
-import com.dirtyredz.gvmled.light.connection.normalizeAddress
+import com.dirtyredz.gvmled.data.model.BluetoothAddress
 import com.dirtyredz.gvmled.data.json.Json
 import com.dirtyredz.gvmled.data.json.JsonArray
 import com.dirtyredz.gvmled.data.json.JsonException
@@ -51,7 +51,7 @@ object LightCatalogCodec {
     }
 
     private fun fromVersion1(stored: StoredCatalog): CatalogResolution {
-        val addresses = stored.legacyAddresses?.split(",")?.filter { it.isNotBlank() }?.map(::normalizeAddress)
+        val addresses = stored.legacyAddresses?.split(",")?.filter { it.isNotBlank() }?.map(BluetoothAddress::normalize)
             ?: SEEDED_ADDRESSES
         val lights = addresses.distinct().mapIndexed { index, address ->
             val custom = stored.legacyNames[address]?.trim()?.take(LightCatalog.MAX_NAME_LENGTH)?.trim()

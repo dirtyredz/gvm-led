@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.light.connection
 
+import com.dirtyredz.gvmled.data.model.BluetoothAddress
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -104,7 +105,7 @@ class ConnectionCoordinator(
     /** Keeps the existing session object for every address still configured; creates the rest. */
     private fun reconciled(current: List<LightSession>, configured: List<String>): List<LightSession> {
         val byAddress = current.associateBy { it.address }
-        return configured.map(::normalizeAddress).distinct().map { address ->
+        return configured.map(BluetoothAddress::normalize).distinct().map { address ->
             byAddress[address] ?: LightSession(address, transports, monotonicMillis, wallMillis, timing, log)
         }
     }

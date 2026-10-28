@@ -37,7 +37,7 @@ fun lightsState(
         TargetStateReducer.reduce(
             members = members,
             wanted = memberEntries.mapNotNull { entry -> entry.wanted?.let { entry.connection.address to it.state } }.toMap(),
-            ranges = memberEntries.associate { entry -> entry.connection.address to entry.connection.hello?.let(CctRange::of) },
+            ranges = memberEntries.associate { entry -> entry.connection.address to entry.connection.currentHello?.let(CctRange::of) },
             name = { address -> catalog.light(address)?.name ?: address },
         )
     }
