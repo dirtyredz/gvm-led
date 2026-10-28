@@ -1,9 +1,9 @@
 package com.dirtyredz.gvmled.feature.lights
 
-import com.dirtyredz.gvmled.connection.LinkStatus
-import com.dirtyredz.gvmled.connection.RadioState
+import com.dirtyredz.gvmled.light.connection.LinkStatus
+import com.dirtyredz.gvmled.light.connection.RadioState
 import com.dirtyredz.gvmled.data.repository.LightEntry
-import com.dirtyredz.gvmled.protocol.FullStateReport
+import com.dirtyredz.gvmled.light.protocol.FullStateReport
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter

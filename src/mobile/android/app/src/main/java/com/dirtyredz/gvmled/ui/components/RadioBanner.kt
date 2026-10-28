@@ -14,7 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.dirtyredz.gvmled.connection.RadioState
+import com.dirtyredz.gvmled.light.connection.RadioState
 
 /** Why Bluetooth is not usable, with the one action that fixes it. Shown on Lights and light management. */
 @Composable

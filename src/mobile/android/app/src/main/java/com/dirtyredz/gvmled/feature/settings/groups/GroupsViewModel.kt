@@ -2,7 +2,7 @@ package com.dirtyredz.gvmled.feature.settings.groups
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dirtyredz.gvmled.connection.LinkStatus
+import com.dirtyredz.gvmled.light.connection.LinkStatus
 import com.dirtyredz.gvmled.data.model.LightCatalog
 import com.dirtyredz.gvmled.data.repository.CatalogResult
 import com.dirtyredz.gvmled.data.repository.LightCatalogRepository

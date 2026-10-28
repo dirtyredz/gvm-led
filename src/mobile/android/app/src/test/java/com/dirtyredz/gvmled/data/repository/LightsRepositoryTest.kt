@@ -1,7 +1,7 @@
 package com.dirtyredz.gvmled.data.repository
 
-import com.dirtyredz.gvmled.connection.LightConnection
-import com.dirtyredz.gvmled.connection.LinkStatus
+import com.dirtyredz.gvmled.light.connection.LightConnection
+import com.dirtyredz.gvmled.light.connection.LinkStatus
 import com.dirtyredz.gvmled.data.model.KnownLight
 import com.dirtyredz.gvmled.data.model.LightCatalog
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -1,6 +1,6 @@
 package com.dirtyredz.gvmled.feature.lights
 
-import com.dirtyredz.gvmled.connection.RadioState
+import com.dirtyredz.gvmled.light.connection.RadioState
 import com.dirtyredz.gvmled.data.model.LightCatalog
 import com.dirtyredz.gvmled.data.repository.LightEntry
 import java.time.ZoneId

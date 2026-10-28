@@ -1,6 +1,6 @@
 package com.dirtyredz.gvmled.data.local
 
-import com.dirtyredz.gvmled.connection.normalizeAddress
+import com.dirtyredz.gvmled.light.connection.normalizeAddress
 import com.dirtyredz.gvmled.data.json.Json
 import com.dirtyredz.gvmled.data.json.JsonArray
 import com.dirtyredz.gvmled.data.json.JsonException

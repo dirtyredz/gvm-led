@@ -1,6 +1,6 @@
 package com.dirtyredz.gvmled.data.repository
 
-import com.dirtyredz.gvmled.connection.normalizeAddress
+import com.dirtyredz.gvmled.light.connection.normalizeAddress
 import com.dirtyredz.gvmled.data.local.CatalogResolution
 import com.dirtyredz.gvmled.data.local.LightCatalogCodec
 import com.dirtyredz.gvmled.data.model.KnownLight

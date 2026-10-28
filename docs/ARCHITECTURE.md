@@ -5,7 +5,7 @@ A controller talks directly to each light over BLE; no cloud, no mesh, no pairin
 
 ## Android slice 1
 `src/mobile/android/` is an independent Compose app. Slice 1 added the Compose shell and codec; slice 2 (below) adds sessions and a read-only screen.
-The Android-free `protocol/` package owns shared frame constants, CRC, outgoing framing and typed
+The Android-free `light/protocol/` package owns shared frame constants, CRC, outgoing framing and typed
 hello/full/short replies. Each LightSession owns its own LegacyFrameDecoder, calling reset on
 disconnect. The decoder bounds buffering to 17 bytes, resynchronizes the byte stream and verifies
 frame length and CRC before handing a complete frame to LegacyMessageParser. The parser dispatches
@@ -15,9 +15,9 @@ Only a decoded FullStateReport can be acknowledged; its nine named, validated fi
 ShortStateReply has no mode/HSI fields and cannot serve as full-state confirmation.
 
 ## Android slice 2: discovery and read-only live state
-Ports and adapters: `connection/` is Android-free and depends only on two seams, `LightScanner`
+Ports and adapters: `light/connection/` is Android-free and depends only on two seams, `LightScanner`
 (advertisements) and `LightTransport` (one GATT link: connect, subscribe, write, events, close).
-`ble/` implements them (`BleScanner`, `GattConnection`) and `AppContainer` wires them; tests use fakes.
+`light/ble/` implements them (`BleScanner`, `GattConnection`) and `AppContainer` wires them; tests use fakes.
 
 - **Radio gate.** `BluetoothRadio` publishes `RadioState` (Unavailable, PermissionRequired,
   PermissionDenied, Off, Ready) from `BlePermissionPolicy`; only Ready lets anything scan or connect.

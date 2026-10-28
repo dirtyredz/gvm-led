@@ -1,12 +1,12 @@
 package com.dirtyredz.gvmled.feature.lights
 
-import com.dirtyredz.gvmled.connection.LightConnection
-import com.dirtyredz.gvmled.connection.LinkStatus
-import com.dirtyredz.gvmled.connection.Vectors
+import com.dirtyredz.gvmled.light.connection.LightConnection
+import com.dirtyredz.gvmled.light.connection.LinkStatus
+import com.dirtyredz.gvmled.light.connection.Vectors
 import com.dirtyredz.gvmled.data.repository.LightEntry
-import com.dirtyredz.gvmled.protocol.FullStateReport
-import com.dirtyredz.gvmled.protocol.HelloReply
-import com.dirtyredz.gvmled.protocol.LegacyFrameDecoder
+import com.dirtyredz.gvmled.light.protocol.FullStateReport
+import com.dirtyredz.gvmled.light.protocol.HelloReply
+import com.dirtyredz.gvmled.light.protocol.LegacyFrameDecoder
 import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

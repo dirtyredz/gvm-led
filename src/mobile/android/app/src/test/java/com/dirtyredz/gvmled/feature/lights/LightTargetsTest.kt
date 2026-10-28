@@ -1,7 +1,7 @@
 package com.dirtyredz.gvmled.feature.lights
 
-import com.dirtyredz.gvmled.connection.LightConnection
-import com.dirtyredz.gvmled.connection.RadioState
+import com.dirtyredz.gvmled.light.connection.LightConnection
+import com.dirtyredz.gvmled.light.connection.RadioState
 import com.dirtyredz.gvmled.data.model.KnownLight
 import com.dirtyredz.gvmled.data.model.LightCatalog
 import com.dirtyredz.gvmled.data.model.LightGroup

@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dirtyredz.gvmled.R
-import com.dirtyredz.gvmled.connection.RadioState
+import com.dirtyredz.gvmled.light.connection.RadioState
 import com.dirtyredz.gvmled.ui.components.RadioActions
 import com.dirtyredz.gvmled.ui.components.RadioBanner
 import com.dirtyredz.gvmled.ui.components.ScreenScaffold

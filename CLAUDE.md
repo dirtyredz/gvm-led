@@ -5,7 +5,7 @@ CRC16/XMODEM framed `4C 54` packets). Goal: avoid the official app's colour-mode
 
 ## Working here
 - Source of truth: `docs/research/protocol.md`. Docs: `STRUCTURE.md`, `docs/{ARCHITECTURE,DECISIONS,FEATURES,ROADMAP,GOTCHAS}.md`. Read GOTCHAS before touching BLE code.
-- Android app (Command Deck toolchain): `src/mobile/android/` — pure codec (`protocol/`), Android-free connection logic behind a transport seam (`connection/`), BLE adapters (`ble/`), read-only live-state UI, Settings with the GitHub updater (`update/`, `data/remote/`), catalog and groups (`data/`, `feature/settings/`).
+- Android app (Command Deck toolchain): `src/mobile/android/` — pure codec (`light/protocol/`), Android-free connection logic behind a transport seam (`light/connection/`), BLE adapters (`light/ble/`), read-only live-state UI, Settings with the GitHub updater (`update/`, `data/remote/`), catalog and groups (`data/`, `feature/settings/`).
   The update check is the app's only network use (owner-tapped); BLE works offline.
 - Fast gate (Java 21, `ANDROID_HOME` pointing to an installed SDK 36 / build-tools 35.0.0):
   `src\mobile\android\gradlew.bat -p src\mobile\android --offline --no-daemon --dependency-verification strict testDebugUnitTest assembleDebug lintDebug`.

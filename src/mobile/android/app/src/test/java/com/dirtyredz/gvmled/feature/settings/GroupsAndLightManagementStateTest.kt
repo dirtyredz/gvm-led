@@ -1,9 +1,9 @@
 package com.dirtyredz.gvmled.feature.settings
 
-import com.dirtyredz.gvmled.connection.Candidate
-import com.dirtyredz.gvmled.connection.LightConnection
-import com.dirtyredz.gvmled.connection.LinkStatus
-import com.dirtyredz.gvmled.connection.RadioState
+import com.dirtyredz.gvmled.light.connection.Candidate
+import com.dirtyredz.gvmled.light.connection.LightConnection
+import com.dirtyredz.gvmled.light.connection.LinkStatus
+import com.dirtyredz.gvmled.light.connection.RadioState
 import com.dirtyredz.gvmled.data.model.KnownLight
 import com.dirtyredz.gvmled.data.model.LightCatalog
 import com.dirtyredz.gvmled.data.model.LightGroup

@@ -21,7 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.dirtyredz.gvmled.connection.RadioState
+import com.dirtyredz.gvmled.light.connection.RadioState
 import com.dirtyredz.gvmled.feature.lights.addressSuffix
 import com.dirtyredz.gvmled.ui.components.NameDialog
 import com.dirtyredz.gvmled.ui.components.RadioActions

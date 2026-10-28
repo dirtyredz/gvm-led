@@ -2,7 +2,7 @@ package com.dirtyredz.gvmled.feature.lights
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dirtyredz.gvmled.connection.RadioState
+import com.dirtyredz.gvmled.light.connection.RadioState
 import com.dirtyredz.gvmled.data.model.LightCatalog
 import com.dirtyredz.gvmled.data.repository.LightsRepository
 import java.time.ZoneId
