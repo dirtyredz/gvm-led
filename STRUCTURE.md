@@ -43,6 +43,7 @@ test/mobile/releases/  # node --test suites for the release tooling (fakes only)
 
 - `src/mobile/android/` — independent pinned Gradle build, wrapper and dependency verification.
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/` — process ownership (`GvmApplication`), explicit dependency wiring (`AppContainer`) and the activity (composition, lifecycle, permission/enable dialogs).
+- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/light/` — the light domain, grouped under one parent so the app's top level stays within the breadth cap: `ble/`, `connection/`, `protocol/` and `control/`. Holds no files of its own.
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/light/ble/` — Android BLE adapters (`BleScanner`, `GattConnection`, `BluetoothRadio`) plus their pure helpers (`GattOperationQueue`, `BlePermissionPolicy`, `LegacyGattProfile`).
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/light/connection/` — Android-free connection logic: the `LightTransport`/`LightScanner` seams, `DiscoveryFilter`, the shared scan and candidates (`LightDiscovery`), one `LightSession` per address, `ConnectionCoordinator` (per-address reconciliation), `ReconnectBackoff` and the visible state types.
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/data/json/` — the app's small strict JSON reader/writer (`Json`), shared by update metadata and catalog persistence.
