@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dirtyredz.gvmled.AppContainer
+import com.dirtyredz.gvmled.feature.lights.LightsActions
 import com.dirtyredz.gvmled.feature.lights.LightsScreen
 import com.dirtyredz.gvmled.feature.lights.LightsViewModel
 import com.dirtyredz.gvmled.feature.settings.SettingsLink
@@ -62,9 +63,14 @@ fun GvmApp(container: AppContainer, radioActions: RadioActions) {
     BackHandler(enabled = stack.entries.size > 1) { stack.pop() }
     when (stack.current) {
         Destination.Lights -> {
-            val model = appViewModel { LightsViewModel(container.lights, container.catalog.catalog, container.radio.state) }
+            val model = appViewModel { LightsViewModel(container.lights, container.catalog.catalog, container.radio.state, container.control) }
             val state by model.state.collectAsStateWithLifecycle()
-            LightsScreen(state, radioActions, model::select, onOpenSettings = { stack.push(Destination.Settings) })
+            LightsScreen(
+                state,
+                radioActions,
+                LightsActions(select = model::select, apply = model::apply, resetSettings = model::resetSettings),
+                onOpenSettings = { stack.push(Destination.Settings) },
+            )
         }
         Destination.Settings -> {
             val model = appViewModel {

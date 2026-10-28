@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 
-/** One light's identity, link status and last observed state (read-only). */
+/** One light: identity, link status, apply status of its wanted settings and its last observed (actual) state. */
 @Composable
 internal fun LightCard(light: LightCardModel) {
     Card(Modifier.fillMaxWidth()) {
@@ -27,6 +27,7 @@ internal fun LightCard(light: LightCardModel) {
             }
             Text(light.status, style = MaterialTheme.typography.labelLarge,
                 color = if (light.isLive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Settings: " + light.apply, style = MaterialTheme.typography.bodyMedium)
             val observed = light.observed
             if (observed == null) {
                 Text("No state report yet", style = MaterialTheme.typography.bodyMedium)

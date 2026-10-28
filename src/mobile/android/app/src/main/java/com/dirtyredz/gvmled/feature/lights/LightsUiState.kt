@@ -2,7 +2,10 @@ package com.dirtyredz.gvmled.feature.lights
 
 import com.dirtyredz.gvmled.light.connection.LinkStatus
 import com.dirtyredz.gvmled.light.connection.RadioState
+import com.dirtyredz.gvmled.data.model.ControlTarget
 import com.dirtyredz.gvmled.data.repository.LightEntry
+import com.dirtyredz.gvmled.light.control.ApplyStatus
+import com.dirtyredz.gvmled.light.control.TargetValues
 import com.dirtyredz.gvmled.light.protocol.FullStateReport
 import java.time.Instant
 import java.time.ZoneId
@@ -17,6 +20,16 @@ data class LightsUiState(
     val groupSummary: String? = null,
     /** True when no light is saved yet: Lights shows how to add one. */
     val isEmpty: Boolean = false,
+    /** The resolved selection that controls act on; null when there are no lights. */
+    val target: ControlTarget? = null,
+    /** The selected target's wanted values (Mixed/Unknown honestly); null when there are no lights. */
+    val controls: TargetValues? = null,
+    /** Per-member apply outcome, e.g. "2 of 3 confirmed; Fill waiting for connection". */
+    val outcome: String? = null,
+    /** Why the last action was refused; cleared by the next accepted one. */
+    val message: String? = null,
+    /** Saved light settings are unreadable: controls are paused until they are reset. */
+    val settingsProblem: String? = null,
 )
 
 /** Display-ready values for one light. Wire units are converted here, nowhere else in the UI. */
@@ -30,6 +43,8 @@ data class LightCardModel(
     /** True when [observed] came from an earlier connection or the link is down. */
     val isStale: Boolean,
     val cctRange: String?,
+    /** This light's apply status for its latest wanted settings. */
+    val apply: String,
 )
 
 data class ObservedLightState(
@@ -55,7 +70,31 @@ fun LightEntry.toCardModel(zone: ZoneId): LightCardModel {
         observed = connection.report?.let { observed(it, connection.reportAtMillis, zone) },
         isStale = connection.report != null && !connection.reportIsCurrent,
         cctRange = hello?.let { "${it.minCctKelvin}-${it.maxCctKelvin} K" },
+        apply = applyText(apply),
     )
+}
+
+/** One light's apply status in words. "Confirmed" only ever means a fresh matching report was seen. */
+internal fun applyText(status: ApplyStatus): String = when (status) {
+    ApplyStatus.NoSettings -> "No settings yet (adopted from its first report)"
+    is ApplyStatus.WaitingForLight -> "Waiting for connection"
+    is ApplyStatus.Pending -> if (status.attempt == 1) "Applying" else "Applying (attempt ${status.attempt})"
+    is ApplyStatus.Confirmed -> "Confirmed"
+    is ApplyStatus.NotConfirmed -> "Not confirmed; reconnecting"
+    is ApplyStatus.Blocked -> "Cannot apply: ${status.reason}"
+}
+
+/**
+ * The outcome across a target's members, counted per light. A group never reads as confirmed while
+ * any member is not, and the members still outstanding are named.
+ */
+internal fun outcomeText(members: List<LightEntry>): String? {
+    if (members.isEmpty()) return null
+    if (members.size == 1) return applyText(members.single().apply)
+    val confirmed = members.count { it.apply is ApplyStatus.Confirmed }
+    val others = members.filter { it.apply !is ApplyStatus.Confirmed }
+        .joinToString("; ") { "${it.name} " + applyText(it.apply).replaceFirstChar(Char::lowercaseChar) }
+    return "$confirmed of ${members.size} confirmed" + if (others.isEmpty()) "" else "; $others"
 }
 
 internal fun statusText(status: LinkStatus, lastError: String?): String = when (status) {
