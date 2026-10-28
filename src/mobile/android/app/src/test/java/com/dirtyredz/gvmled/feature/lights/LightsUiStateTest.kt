@@ -20,7 +20,7 @@ class LightsUiStateTest {
     private fun report(bytes: ByteArray) = LegacyFrameDecoder().feed(bytes).single() as FullStateReport
 
     private fun card(connection: LightConnection, name: String = "Light 1") =
-        LightEntry(connection, name, isCustomName = false).toCardModel(ZoneOffset.UTC)
+        LightEntry(connection, name).toCardModel(ZoneOffset.UTC)
 
     private fun live(report: FullStateReport) = LightConnection(
         address = "94:C9:60:E5:D7:6F", status = LinkStatus.Live, generation = 1, hello = hello,

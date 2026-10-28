@@ -27,6 +27,7 @@
   light's only connection (like the phone app does); every failed or ended generation calls `close()`.
 - **Android: scan budget.** Starting scans more than 5 times in 30 s silently returns nothing; the
   coordinator scans only while a light is searching. Through API 30, scans also need Location on.
+- **Rear knobs are disabled in app mode** (owner hardware fact, 0.1.1 test 2026-10-28): while a light is under app control its physical controls do nothing, so state cannot change from the light during an app session. Never use the knobs as a test or acceptance step; change state from this app, or beforehand from the official app or a power cycle.
 - **Reports arrive about every 4 s** after hello; an idle screen with a Live status is normal between them.
   All packets fit the default 23-byte MTU (largest is an 18-byte ack), so no MTU request is made.
 
@@ -57,5 +58,25 @@
 - **Setting params while off** -> the light stores them and a mode change does not power it on -> in the app send full settings, then power on last (either order works).
 - **`snapshot.mjs shot` stdout has three lines** (`log:`, JSON, `OK`) -> parse the line starting with `{`, not the last line.
 - **Never send sets before a valid hello** -> the old dry run assumed type 30, the lights are type 33 -> `client.py` refuses sets and queries until hello parsed.
+
+- **Updates: install-source permission.** Android asks once per app ("Install unknown apps"); the app
+  opens that settings page only when the owner taps Install, rechecks on return and never re-prompts
+  by itself. Denial leaves Open release page usable.
+- **Updates: debug and release are different apps.** `com.dirtyredz.gvmled.debug` can check but never
+  installs a release (a stable APK is not its update). Only a release signed with the pinned key can
+  update the installed release; a different signer means uninstalling, which the app never does.
+- **Updates: no `phone-release.json`, no direct install.** A release without the manifest shows
+  "Release found; update metadata unavailable" with the release page only, never "up to date". The
+  updater compares versionCode, never version strings.
+- **Updates: archive signer reads.** `getPackageArchiveInfo` may return no `SigningInfo` for an
+  archive on some API 28+ builds; `ApkInspector` falls back to legacy signatures and refuses
+  (fails closed) when no signer is readable. Needs on-device confirmation on API 26 and current.
+- **Discovery: scan demand.** Find is a bounded 30 s window on the same shared scan as reconnects;
+  repeated taps extend it rather than restarting the scan (the 5-starts-in-30-s budget). A sighting
+  is used up by one connection attempt, so a removed and re-added light needs a new advert.
+- **Inactive report fields** (revised slice 3): scene 0 and effect time 0 appear in reports; reported
+  CCT still needs hello-range validation. Do not adopt inactive fields as wanted defaults.
+- **Notification freshness** (revised slice 4): processing time is not receipt time; queued old
+  notifications must not count as fresh confirmation.
 
 _Living doc — refresh with /project-docs when it drifts._

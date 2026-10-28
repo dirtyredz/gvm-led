@@ -5,8 +5,9 @@ Adapted from Command Deck's `docs/mobile/android-distribution.md` (attended flow
 Decision: [DECISIONS](../DECISIONS.md) (2026-10-28). Plan: [android-app.md](../plans/android-app.md)
 slices 6-7. Traps: [GOTCHAS](../GOTCHAS.md).
 
-**Status (2026-10-28):** implemented and unit-tested only. No key exists yet, nothing has run in
-CI, no release is published and nothing is installed from this flow.
+**Status (2026-10-28):** the key exists, and signed release 0.1.1 (tag `android-v0.1.1`, versionCode 2)
+is published as GitHub's latest release and under owner test. Updates from inside the app (below)
+are implemented and unit-tested; their on-phone acceptance has not run yet.
 
 ## Overview
 
@@ -63,6 +64,19 @@ Logs: `.tmp\owner-runs\`. Agents run `-DryRun` only.
 
 Never bootstrap with a debug certificate: the permanent package is release-signed from its first
 install. The debug app is a separate package and can stay installed alongside.
+
+## Installing and updating on the phone (owner path)
+
+The owner installs only from GitHub Releases on the phone: open
+https://github.com/dirtyredz/gvm-led/releases/latest, download `GVM-LED-<version>-android.apk` and
+open it (Android asks once to allow installs from the browser). After that, updates come from the
+app: **Settings > Check for updates > Download and install > Install** (first time only, Android
+also asks to allow installs from GVM LED). The app verifies size, SHA-256, package, version and the
+pinned signer before opening Android's installer, and reports "Updated" only after reading the new
+installed version back. Cancelling the installer offers Install again; the browser release page is
+always offered as a fallback. Lights, names and groups are kept across updates (same package, same
+key); confirm that on each acceptance run, together with the new version shown in Settings.
+`install-release.ps1` (adb) remains a developer tool and is not part of owner acceptance.
 
 ## Recovery
 

@@ -3,12 +3,14 @@ package com.dirtyredz.gvmled.connection
 import java.util.Locale
 
 /**
- * Decides what an advertisement means. Identity is the address: both lights advertise the same
- * name `BT_LED`, and they advertise 0x180F/0x1812 rather than the legacy service, so the custom
- * service is never required here (it is validated after connecting instead).
+ * Decides what an advertisement means against the current configured set. Identity is the address:
+ * the lights all advertise the same name `BT_LED`, and they advertise 0x180F/0x1812 rather than the
+ * legacy service, so the custom service is never required here (it is validated after connecting).
  */
 class DiscoveryFilter(knownAddresses: Collection<String>) {
     private val known = knownAddresses.map(::normalizeAddress).toSet()
+
+    fun isKnown(address: String): Boolean = normalizeAddress(address) in known
 
     fun classify(advertisement: Advertisement): Sighting? {
         val address = normalizeAddress(advertisement.address)
@@ -30,7 +32,7 @@ sealed interface Sighting {
     /** One of the configured lights; eligible for a connection. */
     data class Known(override val address: String) : Sighting
 
-    /** A `BT_LED` device that is not configured; shown, never connected. */
+    /** A `BT_LED` device that is not configured; offered for enrollment, never connected. */
     data class OtherLegacyLight(override val address: String) : Sighting
 }
 

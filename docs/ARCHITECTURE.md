@@ -39,8 +39,37 @@ Ports and adapters: `connection/` is Android-free and depends only on two seams,
   so connections use the address type the scan reported.
 - **State and UI.** `LightConnection` keeps the last report with its generation; it is current only
   while Live in that generation, otherwise shown as last known. `LightsRepository` joins names from
-  `LightPreferences` (versioned; seeds the two addresses). `LightsViewModel` maps wire units for display
+  the catalog (below). `LightsViewModel` maps wire units for display
   (`LightsUiState`). No set commands exist yet; wanted state and confirmation arrive in slices 3-4.
+
+## Amendment A: catalog, discovery, groups and updates (slices 2A-2D)
+- **Catalog vs wanted state.** `LightCatalogRepository` owns the known lights (normalized address,
+  stored name) and named groups (stable generated ID, editable name, member addresses) as one
+  versioned JSON snapshot in SharedPreferences (`LightCatalogPreferences`, rules in
+  `LightCatalogCodec`). Version 1 migrates once, keeping custom names; only a fresh install is
+  seeded. Mutations are serialized and written with `commit()` before the flow publishes; unreadable
+  data pauses changes until an explicit reset. Wanted state (revised slice 3) will be a separate
+  per-address store: groups are selections, never owners of settings.
+- **Dynamic sessions, one scan.** `ConnectionCoordinator` reconciles one `LightSession` per catalog
+  address; unchanged links keep running, and a removed address's job is cancelled and joined before
+  the address can get a new session. `LightDiscovery` is the single scanner: it runs while a light
+  is Searching or during a bounded owner-requested Find window (30 s), turns known-light adverts into
+  fresh sightings (each used up by one attempt) and unknown `BT_LED` adverts into expiring
+  candidates. Adding a candidate only enrolls its address; the session then proves the legacy
+  profile and hello. Establishment stays serialized by one mutex; established links run concurrently.
+- **Targets.** Lights shows chips for every light and every group (no implicit Both/All); the
+  selection is a key (`light:<address>` / `group:<id>`) that falls back to the first light if deleted.
+- **Updates (owner-initiated only).** `UpdateController` (process-scoped) asks
+  `GitHubReleaseClient` for `releases/latest`, applies `ReleasePolicy` (published `android-v` tag,
+  contract asset URLs, one manifest, the exact signed APK name), validates `phone-release.json`
+  against the bundled contract and pin (`PhoneReleaseManifest`, mirroring `manifest.js` through
+  shared fixtures) and compares versionCode with the installed app. Download streams to a part file
+  under the size ceiling, checks size and SHA-256, inspects package/version/minSdk/signer
+  (`ApkInspector`), then promotes to the ready file in `cache/updates/`. The activity launches
+  Android's installer with a FileProvider URI (or the install-source settings page, or the browser)
+  from one-shot effects; success is only ever the installed version read back. `HttpsRequests`
+  allows HTTPS to api.github.com and github.com, and redirects only to GitHub's asset hosts. Leaving
+  the foreground cancels network work; BLE never depends on the network.
 
 ## Link
 - Light advertises as `BT_LED`, Telink SoC (USB VID 0x248A). Address is the per-light identity.

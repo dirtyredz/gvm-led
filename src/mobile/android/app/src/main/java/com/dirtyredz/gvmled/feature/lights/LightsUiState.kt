@@ -11,8 +11,12 @@ import java.time.format.DateTimeFormatter
 data class LightsUiState(
     val radio: RadioState = RadioState.Ready,
     val lights: List<LightCardModel> = emptyList(),
-    /** Address suffixes of unconfigured `BT_LED` devices seen nearby. */
-    val otherLights: List<String> = emptyList(),
+    /** Every light, then every named group; exactly one is selected unless there are no lights. */
+    val targets: List<TargetChip> = emptyList(),
+    /** Members of a selected group, e.g. "Key and Fill: 2 lights". Null for an individual light. */
+    val groupSummary: String? = null,
+    /** True when no light is saved yet: Lights shows how to add one. */
+    val isEmpty: Boolean = false,
 )
 
 /** Display-ready values for one light. Wire units are converted here, nowhere else in the UI. */
@@ -20,7 +24,6 @@ data class LightCardModel(
     val address: String,
     val addressSuffix: String,
     val name: String,
-    val isCustomName: Boolean,
     val status: String,
     val isLive: Boolean,
     val observed: ObservedLightState?,
@@ -47,7 +50,6 @@ fun LightEntry.toCardModel(zone: ZoneId): LightCardModel {
         address = connection.address,
         addressSuffix = addressSuffix(connection.address),
         name = name,
-        isCustomName = isCustomName,
         status = statusText(connection.status, connection.lastError),
         isLive = connection.status == LinkStatus.Live,
         observed = connection.report?.let { observed(it, connection.reportAtMillis, zone) },
