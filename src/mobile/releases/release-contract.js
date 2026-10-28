@@ -43,7 +43,7 @@ export function androidTagVersion(tag) {
 
 /**
  * A published (non-draft, non-prerelease) Android release by shape alone, no network:
- * the one eligibility rule for the Worker's selection and the signer's history.
+ * the shared eligibility rule for CI version allocation and the local signer's history check.
  */
 export function isPublishedAndroid(release) {
   return (

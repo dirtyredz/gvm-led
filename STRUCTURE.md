@@ -20,7 +20,8 @@ See [ARCHITECTURE](docs/ARCHITECTURE.md).
 docs/
 ├── research/    # protocol write-up (static analysis + live findings)
 ├── plans/       # implementation plans
-└── items/       # Docket work items (dk only)
+├── items/       # Docket work items (dk only)
+└── mobile/      # Android distribution runbook (android-distribution.md)
 src/
 ├── mobile/android/          # independent pinned Gradle build
 │   ├── app/src/
@@ -48,7 +49,7 @@ test/mobile/releases/  # node --test suites for the release tooling (fakes only)
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/feature/lights/` — light list screen, card rendering, ViewModel and display mapping (`LightsUiState`).
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/ui/theme/` — Material 3 root surface.
 - `src/mobile/android/app/src/main/res/` — application strings, theme, launcher and backup policy.
-- `src/mobile/android/app/src/test/java/com/dirtyredz/gvmled/` — JUnit tests mirroring the production packages (`protocol/`, `ble/`, `connection/` with the fake transport and scanner, `data/repository/`, `feature/lights/`).
+- `src/mobile/android/app/src/test/java/com/dirtyredz/gvmled/` — JUnit tests mirroring the production packages (`protocol/`, `ble/`, `connection/` with shared vectors plus scriptable transport/factory and scanner fakes, `data/repository/`, `feature/lights/`).
 - `.github/workflows/` — `ci.yml` (strict Android unit, debug assembly and lint gate plus the release-tooling Node tests; no publication), `release.yml` (dispatch on main: version, verify, unsigned build, draft), `release-resume.yml` (restore a draft from a retained build artifact; never rebuilds or signs).
 - `src/mobile/releases/` — release contract and identity (`release-contract.{json,js}`, `signing-certificate.json` public pin), `version.js` (allocation, CI identity), `manifest.js` (phone-release.json), `prepare.js` (CI unsigned staging).
 - `src/mobile/releases/process/` — bounded, redacting child execution for release tools.
@@ -61,7 +62,7 @@ test/mobile/releases/  # node --test suites for the release tooling (fakes only)
 - `scripts/mobile/` — `release.js` (CI: next-version, prepare, draft, resume-source, resume) and `secrets.js` (owner PC: generate-key, verify-key, release-sign).
 - `test/mobile/releases/` — `node --test` suites mirroring `src/mobile/releases/`, with fakes for GitHub, build-tools and the vault (`helpers/`).
 - `src/research/ble/` — Python reference for the legacy protocol: `protocol.py` (framing, CRC, state decode; pure), `client.py` (one light's connection, hello, ack), `camera.py` (Agent Eye capture), `live_test.py` (visible proof orchestration), `test_protocol.py` and `test_camera.py` (unittest), `requirements.txt` (pinned bleak)
-- `scripts/owner/` — owner-run .ps1 steps: `owner-run.ps1` 1.0.0 (copied verbatim from ~/.claude/templates/scripts), `owner-run.test.ps1`, `example-owner-step.ps1`, and `prove-light-commands.ps1` (the slice-0 proof), and the release steps `new-signing-key.ps1`, `publish-release.ps1`, `install-release.ps1`
+- `scripts/owner/` — owner-run .ps1 steps: `owner-run.ps1` 1.0.0 (copied verbatim from ~/.claude/templates/scripts), `owner-run.test.ps1`, `example-owner-step.ps1`, and `prove-light-commands.ps1` (the slice-0 proof), plus the release steps `new-signing-key.ps1`, `publish-release.ps1`, `install-release.ps1` and their shared helpers in `release-tools.ps1`.
 
 ## Components
 

@@ -56,6 +56,25 @@ Lights push a state report (kind 03) after hello and about every 4 s.
 power 00, pick 01, brightness 02 (0-100), CCT 03 (K/100), hue 04 (deg/5), saturation 05, mode 06 (1 CCT, 2 HSI, 3 scenes), scene 07, effect time 08.
 The "colour bug" fix: always send mode 06=02 first, then hue, saturation, brightness, and confirm via the state report.
 
+## Release pipeline
+Android releases use an attended two-part pipeline. `release.yml` allocates the next version on
+`main`, verifies and builds an unsigned APK, records its provenance, and creates a GitHub draft;
+`release-resume.yml` can recreate that draft from the exact retained build artifact without
+rebuilding or signing it. CI authenticates through the GitHub token transport and never receives
+the signing key.
+
+The owner runs the local signer from a clean throwaway worktree at the draft's tag. It uses the
+owner PC's authenticated `gh` session for GitHub transport, then opens the `GVM-LED` 1Password
+vault to recover the permanent Android key only after the source, draft and provenance checks pass.
+The signer verifies the unsigned digest and version history, signs locally, uploads and reads back
+the signed assets, removes only the unsigned APK, and publishes last.
+
+A draft is therefore an unfinished release, not a distributable build. Provenance binds the
+contract, source commit, workflow run and exact unsigned artifact; publication requires that
+evidence plus a versionCode newer than every eligible published Android release. The signing key
+never enters CI, and only the locally signed APK is published. Operational commands, recovery and
+key provisioning are in [the Android distribution runbook](mobile/android-distribution.md).
+
 Full detail: [protocol.md](research/protocol.md).
 
 _Living doc — refresh with /project-docs when it drifts._

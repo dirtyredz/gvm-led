@@ -13,7 +13,7 @@
 //   resume --source <source.json> --prepared <dir> --out <dir>  (release-resume)
 //                   restore the draft from the retained artifact's exact bytes
 //
-// Ported from command-deck scripts/mobile/release.js (+ desktop next-version).
+// Ported from command-deck scripts/mobile/release.js and adapted to Android-only releases.
 import path from "node:path";
 import os from "node:os";
 import { parseArgs } from "node:util";
