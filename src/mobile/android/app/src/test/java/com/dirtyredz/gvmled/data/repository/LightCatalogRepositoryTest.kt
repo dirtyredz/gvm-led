@@ -6,8 +6,10 @@ import com.dirtyredz.gvmled.data.model.KnownLight
 import com.dirtyredz.gvmled.data.model.LightCatalog
 import com.dirtyredz.gvmled.data.model.LightGroup
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -22,9 +24,13 @@ class LightCatalogRepositoryTest {
     private val c = "94:C9:60:AA:BB:CC"
 
     private class FakeStore(var stored: StoredCatalog = StoredCatalog(null, 0, null, emptyMap())) : LightCatalogStore {
+        var reads = 0
         var writes = 0
         var failWrites = false
-        override fun read() = stored
+        override fun read(): StoredCatalog {
+            reads++
+            return stored
+        }
         override fun write(catalog: LightCatalog): Boolean {
             if (failWrites) return false
             writes++
@@ -35,7 +41,7 @@ class LightCatalogRepositoryTest {
 
     private fun TestScope.repo(store: FakeStore): LightCatalogRepository {
         var next = 0
-        return LightCatalogRepository(store, UnconfinedTestDispatcher(testScheduler)) { "g${++next}" }
+        return LightCatalogRepository(store, backgroundScope, UnconfinedTestDispatcher(testScheduler)) { "g${++next}" }
     }
 
     /** Seeded lights a and b, plus c "Back". */
@@ -52,6 +58,26 @@ class LightCatalogRepositoryTest {
         assertEquals(LightCatalogCodec.seeded(), repository.catalog.value)
         assertEquals(1, store.writes)
         assertNull(repository.problem.value)
+    }
+
+    @Test fun initialReadAndMigrationAreAsynchronousAndKeepVersionOneCustomNames() = runTest {
+        val store = FakeStore(
+            StoredCatalog(
+                catalogJson = null,
+                legacyVersion = 1,
+                legacyAddresses = "$a,$b",
+                legacyNames = mapOf(a to "Custom Key"),
+            ),
+        )
+
+        val repository = LightCatalogRepository(store, backgroundScope, StandardTestDispatcher(testScheduler))
+        assertEquals(0, store.reads)
+        assertEquals(0, store.writes)
+
+        runCurrent()
+        assertEquals(1, store.reads)
+        assertEquals(1, store.writes)
+        assertEquals(listOf("Custom Key", "Light 2"), repository.catalog.value.lights.map { it.name })
     }
 
     @Test fun restartSeesTheSameCatalogWithoutRewriting() = runTest {

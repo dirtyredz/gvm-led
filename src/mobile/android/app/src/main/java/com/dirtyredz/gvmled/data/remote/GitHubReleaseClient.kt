@@ -5,6 +5,7 @@ import com.dirtyredz.gvmled.data.json.JsonException
 import com.dirtyredz.gvmled.data.json.JsonObject
 import com.dirtyredz.gvmled.update.NetworkProblem
 import com.dirtyredz.gvmled.update.ReleaseAsset
+import com.dirtyredz.gvmled.update.ReleaseListing
 import com.dirtyredz.gvmled.update.ReleaseSource
 import com.dirtyredz.gvmled.update.UpdateNetworkException
 
@@ -18,11 +19,11 @@ class GitHubReleaseClient(
     private val latestReleaseUrl: String,
     private val userAgent: String,
 ) : ReleaseSource {
-    override suspend fun latestRelease(): JsonObject {
+    override suspend fun latestRelease(): ReleaseListing {
         val response = http.get(latestReleaseUrl, apiHeaders())
         val bytes = http.readBounded(response, MAX_RELEASE_BYTES)
         return try {
-            Json.parseObject(bytes.toString(Charsets.UTF_8))
+            decodeRelease(Json.parseObject(bytes.toString(Charsets.UTF_8)))
         } catch (_: JsonException) {
             throw UpdateNetworkException(NetworkProblem.Refused, "GitHub returned malformed release data")
         }
@@ -36,6 +37,26 @@ class GitHubReleaseClient(
         "X-GitHub-Api-Version" to API_VERSION,
         "User-Agent" to userAgent,
     )
+
+    private fun decodeRelease(root: JsonObject): ReleaseListing {
+        val assets = root.array("assets")?.items?.map { item ->
+            val asset = item as? JsonObject ?: malformed()
+            ReleaseAsset(
+                name = asset.string("name") ?: malformed(),
+                size = asset.long("size") ?: malformed(),
+                url = asset.string("browser_download_url") ?: malformed(),
+            )
+        } ?: malformed()
+        return ReleaseListing(
+            tag = root.string("tag_name") ?: malformed(),
+            pageUrl = root.string("html_url") ?: malformed(),
+            draft = root.bool("draft") ?: malformed(),
+            prerelease = root.bool("prerelease") ?: malformed(),
+            assets = assets,
+        )
+    }
+
+    private fun malformed(): Nothing = throw JsonException("Malformed GitHub release")
 
     companion object {
         const val API_VERSION = "2022-11-28"

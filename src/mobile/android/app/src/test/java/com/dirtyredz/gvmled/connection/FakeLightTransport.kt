@@ -85,9 +85,16 @@ internal class FakeTransports(private val now: () -> Long) : LightTransportFacto
     val created = mutableListOf<FakeLightTransport>()
     var configure: (FakeLightTransport) -> Unit = {}
 
+    val maxOpenByAddress = mutableMapOf<String, Int>()
+
     override fun create(address: String): LightTransport {
         log += "$address create"
-        return FakeLightTransport(address, log, now).also { configure(it); created += it }
+        return FakeLightTransport(address, log, now).also { transport ->
+            configure(transport)
+            created += transport
+            val open = created.count { it.address == address && !it.closed }
+            maxOpenByAddress[address] = maxOf(maxOpenByAddress[address] ?: 0, open)
+        }
     }
 
     fun latest(address: String): FakeLightTransport = created.last { it.address == address }

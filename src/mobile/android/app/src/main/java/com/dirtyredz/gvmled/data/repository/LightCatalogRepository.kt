@@ -9,12 +9,15 @@ import com.dirtyredz.gvmled.data.model.LightGroup
 import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 
 sealed interface CatalogResult {
     /** Saved durably and published. [groupId] is set for a created group. */
@@ -30,23 +33,32 @@ sealed interface CatalogResult {
  */
 class LightCatalogRepository(
     private val store: LightCatalogStore,
+    scope: CoroutineScope,
     private val io: CoroutineDispatcher,
     private val newId: () -> String = { UUID.randomUUID().toString() },
 ) {
     private val mutex = Mutex()
-    private val mutableCatalog: MutableStateFlow<LightCatalog>
-    private val mutableProblem: MutableStateFlow<String?>
+    private val mutableCatalog = MutableStateFlow(LightCatalog.EMPTY)
+    private val mutableProblem = MutableStateFlow<String?>(null)
+    private val initialized = CompletableDeferred<Unit>()
 
     init {
+        scope.launch(io) {
+            initialize()
+            initialized.complete(Unit)
+        }
+    }
+
+    private fun initialize() {
         when (val resolved = LightCatalogCodec.resolve(store.read())) {
             is CatalogResolution.Ready -> {
                 val saved = !resolved.needsWrite || store.write(resolved.catalog)
-                mutableCatalog = MutableStateFlow(resolved.catalog)
-                mutableProblem = MutableStateFlow(if (saved) null else "Saved lights could not be updated")
+                mutableCatalog.value = resolved.catalog
+                mutableProblem.value = if (saved) null else "Saved lights could not be updated"
             }
             is CatalogResolution.Unreadable -> {
-                mutableCatalog = MutableStateFlow(LightCatalog.EMPTY)
-                mutableProblem = MutableStateFlow(resolved.reason)
+                mutableCatalog.value = LightCatalog.EMPTY
+                mutableProblem.value = resolved.reason
             }
         }
     }
@@ -106,6 +118,7 @@ class LightCatalogRepository(
 
     /** Deliberately replaces unreadable saved data with the default lights. */
     suspend fun resetUnreadable(): CatalogResult = mutex.withLock {
+        initialized.await()
         if (mutableProblem.value == null) return CatalogResult.Rejected("Saved lights are readable")
         commit(LightCatalogCodec.seeded())
     }
@@ -116,6 +129,7 @@ class LightCatalogRepository(
 
     /** [transform] returns the next catalog or a [Rejection]. */
     private suspend fun mutate(transform: (LightCatalog) -> Any): CatalogResult = mutex.withLock {
+        initialized.await()
         if (mutableProblem.value != null) return CatalogResult.Rejected("Saved lights could not be read, so changes are paused")
         when (val next = transform(mutableCatalog.value)) {
             is Rejection -> CatalogResult.Rejected(next.reason)

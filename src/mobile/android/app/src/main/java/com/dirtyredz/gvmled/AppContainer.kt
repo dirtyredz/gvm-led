@@ -48,7 +48,7 @@ class AppContainer(context: Context) {
     private val scanner: BleScanner? = adapter?.let(::BleScanner)
 
     private val catalogStore = LightCatalogPreferences(app.getSharedPreferences("lights", Context.MODE_PRIVATE))
-    val catalog = LightCatalogRepository(catalogStore, Dispatchers.IO)
+    val catalog = LightCatalogRepository(catalogStore, scope, Dispatchers.IO)
 
     val discovery = LightDiscovery(
         scanner = scanner ?: LightScanner { emptyFlow() },
