@@ -56,13 +56,3 @@ export async function createMaterial({
     cleanup,
   };
 }
-
-/** Runs `action(material)` and always cleans up. */
-export async function withMaterial(options, action) {
-  const material = await createMaterial(options);
-  try {
-    return await action(material);
-  } finally {
-    await material.cleanup();
-  }
-}

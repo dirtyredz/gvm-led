@@ -43,10 +43,8 @@ export async function signRelease(tx, { state, provenance, expected }) {
   }
 
   if (!state.unsigned) throw fail("draft has neither the unsigned nor a signed APK");
-  const unsignedFile = tx.preparedCandidate?.apk ?? material.file(names.unsigned);
-  const got = tx.preparedCandidate
-    ? await describeAsset(unsignedFile)
-    : await api.downloadAsset(state.unsigned.id, unsignedFile);
+  const unsignedFile = material.file(names.unsigned);
+  const got = await api.downloadAsset(state.unsigned.id, unsignedFile);
   if (got.size !== provenance.unsignedApk.size || got.sha256 !== provenance.unsignedApk.sha256)
     throw fail("the unsigned APK differs from its CI provenance");
   const badging = requireUnsignedBuild(
@@ -58,9 +56,7 @@ export async function signRelease(tx, { state, provenance, expected }) {
   if ((await tx.run(verifyCommand(tx.tools, unsignedFile))).code === 0)
     throw fail("the CI APK is already signed");
 
-  // The unattended caller repeats CURRENT registry/durable/source admission here,
-  // immediately before lazy token decryption and SDK creation.
-  await tx.beforeSecret?.();
+  // The first secret read: 1Password opens here (lazily, scripts/mobile/secrets.js).
   const password = await tx.signing.password();
   const keystore = material.file(KEYSTORE_FILE);
   await writeFile(keystore, await tx.signing.keystore(), { flag: "wx" });

@@ -30,6 +30,22 @@
 - **Reports arrive about every 4 s** after hello; an idle screen with a Live status is normal between them.
   All packets fit the default 23-byte MTU (largest is an 18-byte ack), so no MTU request is made.
 
+- **Release: no pin, no release.** CI's `prepare` refuses while `signing-certificate.json` has no
+  `certificateSha256`, because provenance binds the contract digest (which includes the pin): a draft
+  built before the pin is committed could never be signed. Provision the key and push the pin first.
+- **Release: a pending draft blocks the next one.** `android-draft` refuses while another run's
+  `android-v` draft exists (allocation ignores drafts, so the next run would reuse its number). Publish
+  or delete it first. Only the `android-draft` job can see drafts (the `version` job's read token cannot).
+- **Release: workflows only run on `main` in `dirtyredz/gvm-led`** (every job's `if:`); a dispatch on
+  another branch skips everything and builds nothing. CD's equivalents use `master`.
+- **Release: the signer needs a clean checkout at the tag.** `publish-release.ps1` makes a throwaway
+  worktree for that; running `secrets.js release-sign` by hand from a dirty or wrong checkout refuses.
+- **Owner scripts: never name a variable `$secrets` (any case).** PowerShell variables are
+  case-insensitive, so it overwrites `owner-run.ps1`'s `$script:Secrets` redaction list and the log
+  shows `[REDACTED]` for whatever you stored. Use specific names (`$secretsJs`).
+- **Release tooling is Node 22 ESM with JSON import attributes** (`with { type: "json" }`); older
+  Node fails at import. CI pins 22.20.0; `npm ci` installs only `@1password/sdk` (dev).
+
 - **Windows connect fails with "device not found"** -> bleak/WinRT needs the device seen in a scan first -> scan, then connect (the scripts do).
 - **Connect refused or characteristic missing** -> a light accepts one connection; the phone app (or a previous connection) holds it -> close the GVM app; connect to lights sequentially; retry once after a disconnect ("Characteristic not found").
 - **Packet ignored** -> the app's `\r\n` becomes a trailing `FF` byte on the wire (hex parsing maps the invalid chars to -1) -> always append `FF`; the no-FF variant is untested.

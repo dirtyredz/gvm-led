@@ -1,5 +1,24 @@
 # DECISIONS
 
+## 2026-10-28 — Android releases: CI unsigned draft, local 1Password signing (Command Deck's attended flow)
+**Decision:** Port Command Deck's attended Android release closure (`scripts/mobile/{release,secrets}.js`,
+`src/mobile/releases/`, `release.yml` Android chain, `release-resume.yml`) with GVM identity: CI builds an
+unsigned APK into draft `android-v0.1.<n>`; the owner signs it on Valhalla with a GVM-only key from the
+1Password vault `GVM-LED` (one Windows Hello prompt per run) and publishes; `adb install -r` sideloads it.
+Owner entry points are `scripts/owner/{new-signing-key,publish-release,install-release}.ps1`.
+**Deviations from CD, with reasons:** (1) own vault and key, never CD's (no cross-project key reuse);
+(2) a pending draft from another run blocks the next draft, checked in `android-draft` before any write
+(CD replaces unsigned leftovers; here a draft is the owner's open release; the read-only `version` job
+cannot see drafts, so the refusal lives at the first write-capable job); (3) the published release is
+GitHub's latest (`make_latest: "true"`; GVM has no Windows line to protect, and install-release uses it);
+(4) `release-resume.yml` restores an Android draft from the retained artifact instead of republishing
+Windows; (5) artifacts kept 7 days, not 3, for an attended signer; (6) no build secrets, Worker,
+Firebase, updater, unattended signer or MCP env signing mode; (7) `publish-release.ps1` signs from a
+throwaway worktree at the tag (CD's MCP tool pattern) so the owner never checks out tags by hand;
+(8) release-sign opens 1Password lazily, after every GitHub/checkout check.
+**Rejected:** FCC's lighter `release-sign` (no CI reference/resume, which the plan requires); the `op`
+CLI (one prompt per call); CI signing (the key would live in GitHub).
+
 ## 2026-10-28 — Android BLE behind a transport seam; foreground-only links
 **Decision:** Connection logic (`connection/`) is Android-free and talks to the platform only through
 `LightTransport` (one GATT generation) and `LightScanner`; `ble/` holds the thin Android adapters.
@@ -25,7 +44,7 @@ and JVM 17 bytecode, built with Java 21. Keep strict checksum verification, debu
 and unsigned minified releases. CI uses CD's pinned actions, Ubuntu 24.04 and Gradle cache.
 The owner dispatched slice 1 alongside proof tooling: scaffold/codec work proceeds from existing
 hello/report evidence; no power ordering or hardware control claims are made before visible proof.
-Omit Node, relay, Room, KSP, networking, Firebase, signing and release infrastructure.
+Omit Node, relay, Room, KSP, networking, Firebase, signing and release infrastructure (release tooling and Node arrive with slices 6-7; see the 2026-10-28 release decision).
 Application/container ownership will arrive with actual process dependencies; the placeholder needs none.
 CI runs on pushes to any branch (including the current slice branch), plus manual dispatch, and adds
 debug assembly/lint to CD's Android unit gate. SceneCatalog belongs to the control-planning slice.

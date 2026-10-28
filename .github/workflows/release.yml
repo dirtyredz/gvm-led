@@ -1,0 +1,208 @@
+# GVM LED Android releases (docs/mobile/android-distribution.md; plan docs/plans/android-app.md
+# slice 6). Adapted from command-deck's .github/workflows/release.yml Android chain.
+#
+# A release is deliberate: this workflow runs ONLY when started by hand on main
+# (`gh workflow run release.yml --ref main`); a push runs ci.yml (tests only) and publishes
+# nothing. CI never holds the Android key: it builds an UNSIGNED APK into a DRAFT release,
+# and the owner signs and publishes it locally (scripts/owner/publish-release.ps1).
+#
+#   version ──────────────┐
+#   android-verify ──> android-build ──> android-draft
+#
+# version (contents: read): 0.1.<n>, n one above the highest published android-v<version>
+#   (drafts and failed runs don't count, so a failed run's number is simply reused).
+#   The `release` concurrency group runs one dispatch at a time.
+# android-verify (contents: read): release-tooling Node tests and the Android unit tests.
+# android-build (contents: read): testReleaseUnitTest lintRelease assembleRelease with strict
+#   dependency verification and explicit unsigned/version properties; exactly one unsigned
+#   APK is inspected and staged with its provenance, then uploaded as an attempt-qualified
+#   artifact (kept 7 days so release-resume.yml can restore the draft from the same bytes).
+# android-draft (contents: write): downloads that exact artifact ID, adds
+#   android-ci-reference.json and creates draft android-v<version>. It refuses while another
+#   run's Android draft is pending (sign and publish it, or delete it, first).
+#
+# Deviations from Command Deck: no Windows chain, no build secrets or `android-build`
+# environment (the APK embeds no credentials), artifacts kept 7 days instead of 3, and the
+# default branch is main.
+
+name: Release
+
+on:
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  GVM_RELEASE_CHANNEL: stable
+  NODE_VERSION: "22.20.0"
+
+jobs:
+  version:
+    if: github.repository == 'dirtyredz/gvm-led' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.allocate.outputs.version }}
+    steps:
+      - name: Check out the release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Allocate the next Android release version (last published + 1)
+        id: allocate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/mobile/release.js next-version
+
+  android-verify:
+    if: github.repository == 'dirtyredz/gvm-led' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install release-tooling dependencies (lockfile)
+        run: npm ci --no-audit --no-fund
+      - name: Release-tooling tests
+        run: npm test
+      - name: Cache Gradle downloads and wrapper
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('src/mobile/android/**/*.gradle*', 'src/mobile/android/gradle/**') }}
+          restore-keys: gradle-${{ runner.os }}-
+      - name: Select Java 21 and pinned Android tools
+        run: |
+          test -x "$JAVA_HOME_21_X64/bin/java"
+          echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-36" "build-tools;35.0.0"
+      - name: Android unit tests with strict dependency verification
+        run: |
+          test -x src/mobile/android/gradlew
+          trap 'src/mobile/android/gradlew -p src/mobile/android --stop' EXIT
+          src/mobile/android/gradlew -p src/mobile/android --dependency-verification strict testDebugUnitTest
+
+  android-build:
+    needs: [android-verify, version]
+    if: github.repository == 'dirtyredz/gvm-led' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.phone-upload.outputs.artifact-id }}
+      artifact-sha256: ${{ steps.phone-upload.outputs.artifact-digest }}
+      artifact-attempt: ${{ steps.phone-prepare.outputs.run-attempt }}
+    env:
+      GVM_RELEASE_VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Cache Gradle downloads and wrapper
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('src/mobile/android/**/*.gradle*', 'src/mobile/android/gradle/**') }}
+          restore-keys: gradle-${{ runner.os }}-
+      - name: Select Java 21 and pinned Android tools
+        run: |
+          test -x "$JAVA_HOME_21_X64/bin/java"
+          echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-36" "build-tools;35.0.0"
+      - name: Allocate phone version
+        id: phone-version
+        run: node scripts/mobile/release.js version
+      - name: Build the unsigned permanent-package release APK
+        env:
+          PHONE_NAME: ${{ steps.phone-version.outputs.name }}
+          PHONE_CODE: ${{ steps.phone-version.outputs.code }}
+        run: |
+          trap 'src/mobile/android/gradlew -p src/mobile/android --stop' EXIT
+          src/mobile/android/gradlew -p src/mobile/android --dependency-verification strict --no-configuration-cache testReleaseUnitTest lintRelease assembleRelease -PunsignedRelease=true -PphoneVersionName="$PHONE_NAME" -PphoneVersionCode="$PHONE_CODE"
+      - name: Prepare unsigned APK and provenance before artifact upload
+        id: phone-prepare
+        run: |
+          shopt -s nullglob
+          apks=(src/mobile/android/app/build/outputs/apk/release/*-unsigned.apk)
+          test "${#apks[@]}" -eq 1
+          node scripts/mobile/release.js prepare --apk "${apks[0]}" --tools "$ANDROID_HOME/build-tools/35.0.0" --out "$RUNNER_TEMP/phone-prepared"
+      - id: phone-upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: phone-unsigned-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/phone-prepared/*
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  android-draft:
+    needs: [android-build, version]
+    if: github.repository == 'dirtyredz/gvm-led' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GVM_RELEASE_VERSION: ${{ needs.version.outputs.version }}
+    permissions:
+      contents: write
+    concurrency:
+      group: android-draft
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.android-build.outputs.artifact-id }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/phone-unsigned
+      - name: Add exact CI reference and upload the Android draft
+        id: draft
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ANDROID_ARTIFACT_ID: ${{ needs.android-build.outputs.artifact-id }}
+          ANDROID_ARTIFACT_SHA256: ${{ needs.android-build.outputs.artifact-sha256 }}
+          ANDROID_ARTIFACT_ATTEMPT: ${{ needs.android-build.outputs.artifact-attempt }}
+        run: |
+          node scripts/mobile/release.js draft --prepared "$RUNNER_TEMP/phone-unsigned" --out "$RUNNER_TEMP/phone-draft" --artifact-id "$ANDROID_ARTIFACT_ID" --artifact-sha256 "$ANDROID_ARTIFACT_SHA256" --artifact-attempt "$ANDROID_ARTIFACT_ATTEMPT"
+      - name: Tell the owner how to sign it
+        env:
+          TAG: ${{ steps.draft.outputs.tag }}
+          RELEASE_ID: ${{ steps.draft.outputs.release-id }}
+        run: |
+          echo "Draft $TAG (release $RELEASE_ID) is ready. Sign and publish it on the owner PC:" >> "$GITHUB_STEP_SUMMARY"
+          echo "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\owner\\publish-release.ps1 -Tag $TAG -ReleaseId $RELEASE_ID" >> "$GITHUB_STEP_SUMMARY"

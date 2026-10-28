@@ -10,6 +10,11 @@ CRC16/XMODEM framed `4C 54` packets). Goal: avoid the official app's colour-mode
   `src\mobile\android\gradlew.bat -p src\mobile\android --offline --no-daemon --dependency-verification strict testDebugUnitTest assembleDebug lintDebug`.
   Afterwards: `src\mobile\android\gradlew.bat -p src\mobile\android --stop`.
   The wrapper distribution and dependencies must already be cached for offline builds.
+- Release tooling (Node 22, `src/mobile/releases/`, `scripts/mobile/`): `npm ci` then `npm test` (fakes only).
+  Releases: CI unsigned draft (`release.yml`, dispatch on `main`), local signing with the GVM key in
+  1Password vault `GVM-LED`, `adb` install — runbook `docs/mobile/android-distribution.md`. Agents run
+  `new-signing-key.ps1`, `publish-release.ps1` and `install-release.ps1` with `-DryRun` only; real runs
+  raise Windows Hello / 1Password prompts and touch GitHub releases.
 - The Python 3.12 + bleak reference lives in `src/research/ble/` and runs through
   `scripts/owner/prove-light-commands.ps1` (`-DryRun`, `-Check`, `-Camera`).
 - Hardware tests need the phone app closed and the lights in range; run them one connection at a time.

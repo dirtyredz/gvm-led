@@ -1,0 +1,87 @@
+# Restore an Android draft from a retained build artifact (docs/mobile/android-distribution.md,
+# "Recovery"; plan docs/plans/android-app.md slice 6).
+#
+# Explicit deviation from command-deck's release-resume.yml, which republishes a retained
+# Windows candidate: here it validates the ORIGINAL Release run through the Actions API (a
+# finished workflow_dispatch run of release.yml on main, its android-verify and
+# android-build jobs successful in the named attempt, exactly one live unsigned artifact
+# created by that build, its ID and digest), downloads exactly that artifact, checks its
+# provenance against the verified run, and recreates the draft with the SAME bytes and
+# version. Nothing is rebuilt, tested or signed here. The same pending-draft and
+# published-tag refusals as the normal draft apply. An expired artifact (7 days) needs a
+# new normal release run instead.
+#
+# Inputs are data: they reach the scripts only as environment variables, never
+# interpolated into a shell command.
+
+name: Release resume
+
+on:
+  workflow_dispatch:
+    inputs:
+      source-run-id:
+        description: "The Release run whose unsigned build to restore (its ID, from the run's URL)"
+        required: true
+        type: string
+      attempt:
+        description: "The attempt of that run whose android-build produced the artifact"
+        required: true
+        type: string
+
+permissions: {}
+
+# Never alongside a release dispatch: allocation and drafts stay serialized.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "22.20.0"
+
+jobs:
+  restore-draft:
+    if: github.repository == 'dirtyredz/gvm-led' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Check out the trusted tooling (this dispatch's main commit)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Verify the source run, attempt and retained artifact
+        id: source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RESUME_SOURCE_RUN_ID: ${{ inputs.source-run-id }}
+          RESUME_ATTEMPT: ${{ inputs.attempt }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/resume"
+          node scripts/mobile/release.js resume-source --run-id "$RESUME_SOURCE_RUN_ID" --attempt "$RESUME_ATTEMPT" --out "$RUNNER_TEMP/resume/source.json"
+
+      - name: Fetch exactly the verified artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ steps.source.outputs.artifact-id }}
+          run-id: ${{ steps.source.outputs.run-id }}
+          github-token: ${{ github.token }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/resume/prepared
+
+      - name: Restore the draft from the same bytes and version
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          node scripts/mobile/release.js resume
+          --source "$RUNNER_TEMP/resume/source.json"
+          --prepared "$RUNNER_TEMP/resume/prepared"
+          --out "$RUNNER_TEMP/resume/reference"

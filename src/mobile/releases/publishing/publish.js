@@ -19,44 +19,6 @@ import { verifyDraft, verifyRevision } from "./steps/verify-source.js";
 import { signRelease } from "./steps/sign.js";
 import { uploadAndVerify } from "./steps/upload-and-verify.js";
 import { finalize } from "./steps/finalize.js";
-import { describeAsset } from "./assets.js";
-
-// Shared effects, after each caller's own admission. The protected worker supplies
-// durable checkpoints; the attended caller keeps its existing lock and cleanup.
-export async function publishVerified(tx, draft) {
-  const stage = tx.stage ?? (async (_name, action) => action());
-  const signed = await stage(
-    "sign",
-    () => signRelease(tx, draft),
-    (result) => ({
-      signedApkSha256: result.manifest.apk.sha256,
-      signedApkSize: result.manifest.apk.size,
-    }),
-  );
-  const uploaded = await stage(
-    "upload",
-    () => uploadAndVerify(tx, { ...signed, state: draft.state }),
-    async (state) => ({
-      signedAssetId: state.signed.id,
-      manifestAssetId: state.manifest.id,
-      manifestSha256: (await describeAsset(tx.material.file("phone-release.local.json"))).sha256,
-    }),
-  );
-  await stage(
-    "verify",
-    async () => uploaded,
-    async () => ({
-      signedApkSha256: signed.manifest.apk.sha256,
-      manifestSha256: (await describeAsset(tx.material.file("phone-release.local.json"))).sha256,
-    }),
-  );
-  await stage(
-    "finalize",
-    () => finalize(tx, draft),
-    () => ({ releaseId: tx.id }),
-  );
-  return signed.manifest;
-}
 
 /**
  * deps: {api, run, signing, material, tools, keytool, git, lock, say, pin?}; `material()`
@@ -70,7 +32,10 @@ export async function releaseSign(deps, { tag, releaseId }) {
     material = await deps.material();
     const tx = { ...deps, ...revision, material };
     const draft = await verifyDraft(tx);
-    return await publishVerified(tx, draft);
+    const signed = await signRelease(tx, draft);
+    await uploadAndVerify(tx, { ...signed, state: draft.state });
+    await finalize(tx, draft);
+    return signed.manifest;
   } finally {
     await material?.cleanup();
     await deps.lock.release();

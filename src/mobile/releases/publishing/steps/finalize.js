@@ -39,7 +39,6 @@ export async function finalize(tx, { provenance, state: initialState, ciReferenc
   )
     throw fail("draft asset set changed");
   if ((await tagCommit(api, tag)) !== tx.commit) throw fail("tag changed before publication");
-  await tx.beforePublish?.(state);
   await api.request("PATCH", `/releases/${id}`, { body: { draft: false, make_latest: "true" } });
   const published = await api.request("GET", `/releases/${id}`);
   if (published.draft !== false || published.tag_name !== tag)

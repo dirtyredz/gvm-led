@@ -4,6 +4,13 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// Release identity comes from CI's allocation (scripts/mobile/release.js version), as in
+// Command Deck: versionName 0.1.<n>, versionCode n + 1. Local debug builds keep the defaults.
+val phoneCode = providers.gradleProperty("phoneVersionCode").orNull?.toIntOrNull()
+val phoneName = providers.gradleProperty("phoneVersionName").orNull
+if (phoneCode != null) require(phoneCode in 2..2100000000) { "Invalid phoneVersionCode" }
+if (phoneName != null) require(Regex("[0-9]+\\.[0-9]+\\.[0-9]+").matches(phoneName)) { "Invalid phoneVersionName" }
+
 android {
     namespace = "com.dirtyredz.gvmled"
     compileSdk = 36
@@ -12,8 +19,8 @@ android {
         applicationId = "com.dirtyredz.gvmled"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = phoneCode ?: 1
+        versionName = phoneName ?: "0.1.0"
     }
     buildTypes {
         debug {
@@ -42,11 +49,20 @@ kotlin {
     compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
 }
 
-// No signing material in Gradle. Attended release tooling belongs to a later slice.
+// No signing material in Gradle: CI builds unsigned and the owner signs locally
+// (docs/mobile/android-distribution.md).
 val unsignedRelease = providers.gradleProperty("unsignedRelease").orNull == "true"
 tasks.configureEach {
-    if (name == "packageRelease") doFirst {
-        check(unsignedRelease) { "Release packaging requires -PunsignedRelease=true; signing is external." }
+    if (name == "packageRelease") {
+        val missing = listOfNotNull(
+            "-PunsignedRelease=true".takeIf { !unsignedRelease },
+            "-PphoneVersionCode".takeIf { phoneCode == null },
+            "-PphoneVersionName".takeIf { phoneName == null },
+        )
+        doFirst {
+            if (missing.isNotEmpty())
+                throw GradleException("Release packaging requires ${missing.joinToString()} (docs/mobile/android-distribution.md).")
+        }
     }
 }
 dependencies {
