@@ -1,7 +1,5 @@
 package com.dirtyredz.gvmled.update
 
-import com.dirtyredz.gvmled.data.json.JsonObject
-
 /** GitHub's latest release after shape checks: the assets the app may use, with contract URLs. */
 data class LatestRelease(
     val tag: String,
@@ -22,22 +20,16 @@ sealed interface ReleaseSelection {
  * contract's own repository/tag/name; version comparison uses versionCode only.
  */
 object ReleasePolicy {
-    fun select(release: JsonObject, contract: ReleaseContract): ReleaseSelection {
-        val tag = release.string("tag_name") ?: return rejected(ReleaseProblem.MalformedRelease)
+    fun select(release: ReleaseListing, contract: ReleaseContract): ReleaseSelection {
+        val tag = release.tag
         val versionName = contract.tagVersion(tag) ?: return rejected(ReleaseProblem.ForeignTag)
         val pageUrl = contract.releasePage(tag)
-        if (release.string("html_url") != pageUrl) return rejected(ReleaseProblem.MalformedRelease)
-        if (release.bool("draft") != false || release.bool("prerelease") != false)
+        if (release.pageUrl != pageUrl) return rejected(ReleaseProblem.MalformedRelease)
+        if (release.draft || release.prerelease)
             return rejected(ReleaseProblem.NotPublished, pageUrl)
-        val listed = release.array("assets")?.items ?: return rejected(ReleaseProblem.MalformedRelease, pageUrl)
-        if (listed.size > contract.maxAssetsPerRelease) return rejected(ReleaseProblem.MalformedRelease, pageUrl)
-        val assets = mutableListOf<ReleaseAsset>()
-        for (item in listed) {
-            val asset = item as? JsonObject ?: return rejected(ReleaseProblem.MalformedRelease, pageUrl)
-            val name = asset.string("name") ?: return rejected(ReleaseProblem.MalformedRelease, pageUrl)
-            val size = asset.long("size")?.takeIf { it >= 0 } ?: return rejected(ReleaseProblem.MalformedRelease, pageUrl)
-            assets += ReleaseAsset(name, size, asset.string("browser_download_url").orEmpty())
-        }
+        val assets = release.assets
+        if (assets.size > contract.maxAssetsPerRelease) return rejected(ReleaseProblem.MalformedRelease, pageUrl)
+        if (assets.any { it.size < 0 }) return rejected(ReleaseProblem.MalformedRelease, pageUrl)
         if (assets.groupBy { it.name }.any { it.value.size > 1 }) return rejected(ReleaseProblem.DuplicateAsset, pageUrl)
         fun named(name: String): ReleaseAsset? = assets.firstOrNull { it.name == name }
         val manifest = named(contract.manifestAsset)

@@ -25,7 +25,9 @@ Ports and adapters: `light/connection/` is Android-free and depends only on two 
   `AppVisibility`, the one lifecycle seam; configuration changes keep links), `ConnectionCoordinator` runs one shared unfiltered scan only while some light is
   Searching, classifies advertisements by address (`DiscoveryFilter`; unknown `BT_LED` devices are
   listed, never connected) and runs one loop per configured address: search, connect once, wait
-  (1 s after a live link, doubling to 30 s after failures), then require a fresh sighting.
+  (1 s after a live link, doubling to 30 s after failures), then require a fresh sighting. Lifecycle
+  transitions are serialized; stopping cancels and joins the complete maintenance tree before a
+  subsequent start can create its replacement.
 - **Session.** `LightSession` is the only owner of its light's link. Each `connectOnce` is a new
   generation that creates, uses and always closes one transport. Establishment holds a shared mutex,
   so lights connect one after another; the live phase runs concurrently. Order: connect and
@@ -47,7 +49,8 @@ Ports and adapters: `light/connection/` is Android-free and depends only on two 
 - **Catalog vs wanted state.** `LightCatalogRepository` owns the known lights (normalized address,
   stored name) and named groups (stable generated ID, editable name, member addresses) as one
   versioned JSON snapshot in SharedPreferences (`LightCatalogPreferences`, rules in
-  `LightCatalogCodec`). Version 1 migrates once, keeping custom names; only a fresh install is
+  `LightCatalogCodec`). Its initial read and any migration write run asynchronously on the injected
+  I/O dispatcher. Version 1 migrates once, keeping custom names; only a fresh install is
   seeded. Mutations are serialized and written with `commit()` before the flow publishes; unreadable
   data pauses changes until an explicit reset. Wanted state is a separate per-address store
   (below): groups are selections, never owners of settings.
@@ -97,7 +100,8 @@ Ports and adapters: `light/connection/` is Android-free and depends only on two 
   each card and a group outcome ("2 of 3 confirmed; Fill waiting for connection"). Sliders apply on
   release (one revision per drag).
 - **Updates (owner-initiated only).** `UpdateController` (process-scoped) asks
-  `GitHubReleaseClient` for `releases/latest`, applies `ReleasePolicy` (published `android-v` tag,
+  `GitHubReleaseClient` for a typed `releases/latest` listing (the remote adapter owns JSON decoding),
+  then applies `ReleasePolicy` (published `android-v` tag,
   contract asset URLs, one manifest, the exact signed APK name), validates `phone-release.json`
   against the bundled contract and pin (`PhoneReleaseManifest`, mirroring `manifest.js` through
   shared fixtures) and compares versionCode with the installed app. Download streams to a part file

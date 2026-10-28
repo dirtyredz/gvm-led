@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,10 +46,16 @@ class ConnectionCoordinator(
     private val sessions = MutableStateFlow(reconciled(emptyList(), addresses.value))
     private val establish = Mutex()
     private var job: Job? = null
+    private val lifecycle = Channel<Boolean>(Channel.UNLIMITED)
 
     init {
         discovery.setKnown(sessions.value.map { it.address })
         scope.launch { addresses.collect { reconcile(it) } }
+        scope.launch {
+            for (running in lifecycle) {
+                if (running) startNow() else stopNow()
+            }
+        }
     }
 
     /** The current session per configured light; synchronizers attach to these. */
@@ -63,6 +70,15 @@ class ConnectionCoordinator(
 
     /** Foreground entry. Idempotent. */
     fun start() {
+        lifecycle.trySend(true)
+    }
+
+    /** Background entry: cancels scanning and sessions; each session closes its transport. */
+    fun stop() {
+        lifecycle.trySend(false)
+    }
+
+    private fun startNow() {
         if (job?.isActive == true) return
         job = scope.launch {
             radio.collectLatest { state ->
@@ -71,9 +87,8 @@ class ConnectionCoordinator(
         }
     }
 
-    /** Background entry: cancels scanning and sessions; each session closes its transport. */
-    fun stop() {
-        job?.cancel()
+    private suspend fun stopNow() {
+        job?.cancelAndJoin()
         job = null
         idleAll()
     }

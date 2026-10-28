@@ -5,7 +5,7 @@ import com.dirtyredz.gvmled.data.json.JsonArray
 import com.dirtyredz.gvmled.data.json.JsonObject
 import java.io.File
 
-/** Test inputs for the updater: the real bundled contract (with a fake pin) and GitHub-shaped JSON. */
+/** Test inputs for the updater: the real bundled contract (with a fake pin) and typed release listings. */
 internal object UpdateFixtures {
     const val PIN = "5555555555555555555555555555555555555555555555555555555555555555"
     const val OTHER_PIN = "6666666666666666666666666666666666666666666666666666666666666666"
@@ -50,23 +50,20 @@ internal object UpdateFixtures {
     }
 
     fun asset(tag: String, name: String, size: Long) =
-        """{"name":"$name","size":$size,"browser_download_url":"https://github.com/dirtyredz/gvm-led/releases/download/$tag/$name"}"""
+        ReleaseAsset(name, size, "https://github.com/dirtyredz/gvm-led/releases/download/$tag/$name")
 
-    /** A `releases/latest` response. Assets default to the manifest plus the signed APK. */
-    fun releaseJson(
+    /** A typed `releases/latest` response. Assets default to the manifest plus the signed APK. */
+    fun releaseListing(
         versionCode: Long = 3,
         apkSize: Long = 4,
         tag: String = "android-v${versionName(versionCode)}",
         draft: Boolean = false,
         prerelease: Boolean = false,
-        assets: List<String>? = null,
-    ): JsonObject {
+        assets: List<ReleaseAsset>? = null,
+    ): ReleaseListing {
         val name = versionName(versionCode)
         val listed = assets ?: listOf(asset(tag, "phone-release.json", 400), asset(tag, "GVM-LED-$name-android.apk", apkSize))
-        return Json.parseObject(
-            """{"tag_name":"$tag","html_url":"https://github.com/dirtyredz/gvm-led/releases/tag/$tag",""" +
-                """"draft":$draft,"prerelease":$prerelease,"assets":[${listed.joinToString(",")}]}""",
-        )
+        return ReleaseListing(tag, "https://github.com/dirtyredz/gvm-led/releases/tag/$tag", draft, prerelease, listed)
     }
 
     fun installed(versionCode: Long = 2, packageName: String = "com.dirtyredz.gvmled", signers: Set<String> = setOf(PIN)) =
