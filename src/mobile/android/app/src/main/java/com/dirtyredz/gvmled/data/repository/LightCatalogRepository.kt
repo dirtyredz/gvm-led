@@ -6,7 +6,6 @@ import com.dirtyredz.gvmled.data.local.LightCatalogCodec
 import com.dirtyredz.gvmled.data.model.KnownLight
 import com.dirtyredz.gvmled.data.model.LightCatalog
 import com.dirtyredz.gvmled.data.model.LightGroup
-import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,49 +58,39 @@ class LightCatalogRepository(
     /** Enrolls a discovered address under [name]. Not a compatibility claim: the session verifies it. */
     suspend fun addLight(address: String, name: String): CatalogResult = mutate { catalog ->
         val normalized = normalizeAddress(address)
-        val cleaned = name.trim()
-        when {
-            catalog.light(normalized) != null -> reject("That light is already added")
-            !LightCatalog.isValidName(cleaned) -> reject(NAME_RULE)
-            else -> catalog.copy(lights = catalog.lights + KnownLight(normalized, cleaned))
-        }
+        Change.Next(catalog.copy(lights = catalog.lights + KnownLight(normalized, name.trim())))
     }
 
     suspend fun rename(address: String, name: String): CatalogResult = mutate { catalog ->
         val normalized = normalizeAddress(address)
-        val cleaned = name.trim()
-        when {
-            catalog.light(normalized) == null -> reject("That light is not saved")
-            !LightCatalog.isValidName(cleaned) -> reject(NAME_RULE)
-            else -> catalog.copy(lights = catalog.lights.map { if (it.address == normalized) it.copy(name = cleaned) else it })
-        }
+        if (catalog.light(normalized) == null) Change.Reject("That light is not saved")
+        else Change.Next(catalog.copy(lights = catalog.lights.map { if (it.address == normalized) it.copy(name = name.trim()) else it }))
     }
 
     suspend fun createGroup(name: String, members: Collection<String>): CatalogResult {
         val id = newId()
         val result = mutate { catalog ->
-            groupProblem(catalog, null, name, members)?.let(::reject)
-                ?: catalog.copy(groups = catalog.groups + LightGroup(id, name.trim(), cleanMembers(catalog, members)))
+            Change.Next(catalog.copy(groups = catalog.groups + LightGroup(id, name.trim(), cleanMembers(catalog, members))))
         }
         return if (result is CatalogResult.Saved) CatalogResult.Saved(id) else result
     }
 
     /** Changes the name and membership; the group keeps its ID. */
     suspend fun updateGroup(id: String, name: String, members: Collection<String>): CatalogResult = mutate { catalog ->
-        when {
-            catalog.group(id) == null -> reject("That group no longer exists")
-            else -> groupProblem(catalog, id, name, members)?.let(::reject) ?: catalog.copy(
+        if (catalog.group(id) == null) Change.Reject("That group no longer exists")
+        else Change.Next(
+            catalog.copy(
                 groups = catalog.groups.map {
                     if (it.id == id) it.copy(name = name.trim(), members = cleanMembers(catalog, members)) else it
                 },
-            )
-        }
+            ),
+        )
     }
 
     /** Removes only the group; its lights and every other group stay as they are. */
     suspend fun deleteGroup(id: String): CatalogResult = mutate { catalog ->
-        if (catalog.group(id) == null) reject("That group no longer exists")
-        else catalog.copy(groups = catalog.groups.filterNot { it.id == id })
+        if (catalog.group(id) == null) Change.Reject("That group no longer exists")
+        else Change.Next(catalog.copy(groups = catalog.groups.filterNot { it.id == id }))
     }
 
     /** Deliberately replaces unreadable saved data with the default lights. */
@@ -110,17 +99,17 @@ class LightCatalogRepository(
         commit(LightCatalogCodec.seeded())
     }
 
-    private class Rejection(val reason: String)
+    /** What a mutation proposes; every proposed catalog is then checked by [LightCatalog.problem]. */
+    private sealed interface Change {
+        data class Next(val catalog: LightCatalog) : Change
+        data class Reject(val reason: String) : Change
+    }
 
-    private fun reject(reason: String) = Rejection(reason)
-
-    /** [transform] returns the next catalog or a [Rejection]. */
-    private suspend fun mutate(transform: (LightCatalog) -> Any): CatalogResult = mutex.withLock {
+    private suspend fun mutate(transform: (LightCatalog) -> Change): CatalogResult = mutex.withLock {
         if (mutableProblem.value != null) return CatalogResult.Rejected("Saved lights could not be read, so changes are paused")
-        when (val next = transform(mutableCatalog.value)) {
-            is Rejection -> CatalogResult.Rejected(next.reason)
-            is LightCatalog -> commit(next)
-            else -> error("Unexpected transform result")
+        when (val change = transform(mutableCatalog.value)) {
+            is Change.Reject -> CatalogResult.Rejected(change.reason)
+            is Change.Next -> commit(change.catalog)
         }
     }
 
@@ -133,25 +122,9 @@ class LightCatalogRepository(
         return CatalogResult.Saved()
     }
 
+    /** Catalog order and deduplicated; an address no longer saved is kept so validation reports it. */
     private fun cleanMembers(catalog: LightCatalog, members: Collection<String>): List<String> {
-        val chosen = members.map(::normalizeAddress).toSet()
-        return catalog.addresses.filter { it in chosen } // catalog order, deduplicated
-    }
-
-    private fun groupProblem(catalog: LightCatalog, editingId: String?, name: String, members: Collection<String>): String? {
-        val cleaned = name.trim()
-        val chosen = members.map(::normalizeAddress).toSet()
-        return when {
-            !LightCatalog.isValidName(cleaned) -> NAME_RULE
-            catalog.groups.any { it.id != editingId && it.name.lowercase(Locale.ROOT) == cleaned.lowercase(Locale.ROOT) } ->
-                "Another group is already called \"$cleaned\""
-            chosen.isEmpty() -> "Choose at least one light"
-            chosen.any { catalog.light(it) == null } -> "A chosen light is no longer saved"
-            else -> null
-        }
-    }
-
-    private companion object {
-        const val NAME_RULE = "Use a name of 1 to ${LightCatalog.MAX_NAME_LENGTH} characters"
+        val chosen = members.map(::normalizeAddress).distinct()
+        return catalog.addresses.filter { it in chosen } + chosen.filter { catalog.light(it) == null }
     }
 }

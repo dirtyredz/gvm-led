@@ -3,6 +3,7 @@ package com.dirtyredz.gvmled.feature.lights
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dirtyredz.gvmled.light.connection.RadioState
+import com.dirtyredz.gvmled.data.model.ControlTarget
 import com.dirtyredz.gvmled.data.model.LightCatalog
 import com.dirtyredz.gvmled.data.repository.LightsRepository
 import java.time.ZoneId
@@ -22,7 +23,7 @@ class LightsViewModel(
     radio: StateFlow<RadioState>,
     zone: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
-    private val selected = MutableStateFlow<String?>(null)
+    private val selected = MutableStateFlow<ControlTarget?>(null)
 
     val state: StateFlow<LightsUiState> =
         combine(radio, repository.lights, catalog, selected) { radioState, lights, known, key ->
@@ -33,8 +34,8 @@ class LightsViewModel(
             LightsUiState(radio.value, isEmpty = catalog.value.lights.isEmpty()),
         )
 
-    fun select(key: String) {
-        selected.value = key
+    fun select(target: ControlTarget) {
+        selected.value = target
     }
 
     private companion object {

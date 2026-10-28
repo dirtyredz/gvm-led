@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dirtyredz.gvmled.R
+import com.dirtyredz.gvmled.data.model.ControlTarget
 import com.dirtyredz.gvmled.light.connection.RadioState
 import com.dirtyredz.gvmled.ui.components.RadioActions
 import com.dirtyredz.gvmled.ui.components.RadioBanner
@@ -20,7 +21,7 @@ import com.dirtyredz.gvmled.ui.components.ScreenScaffold
 fun LightsScreen(
     state: LightsUiState,
     radioActions: RadioActions,
-    onSelect: (String) -> Unit,
+    onSelect: (ControlTarget) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     ScreenScaffold(
@@ -46,12 +47,12 @@ fun LightsScreen(
 
 /** Every individual light, then every named group. Selection is read-only until controls arrive. */
 @Composable
-private fun TargetSelector(targets: List<TargetChip>, onSelect: (String) -> Unit) {
+private fun TargetSelector(targets: List<TargetChip>, onSelect: (ControlTarget) -> Unit) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         targets.forEach { target ->
             FilterChip(
                 selected = target.selected,
-                onClick = { onSelect(target.key) },
+                onClick = { onSelect(target.target) },
                 label = { Text(if (target.isGroup) "${target.label} (group)" else target.label) },
             )
         }
