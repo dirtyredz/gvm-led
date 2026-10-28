@@ -77,6 +77,15 @@
 - **Inactive report fields** (revised slice 3): scene 0 and effect time 0 appear in reports; reported
   CCT still needs hello-range validation. Do not adopt inactive fields as wanted defaults.
 - **Notification freshness** (revised slice 4): processing time is not receipt time; queued old
-  notifications must not count as fresh confirmation.
+  notifications must not count as fresh confirmation. Stamps are taken at `GattConnection` ingress
+  (`SystemClock.elapsedRealtime`) and compared with the final write's completion time, never with
+  the wall-clock `reportAtMillis` shown on screen.
+- **Set echoes are 8-byte frames** (`4C 54 08 ID TYPE 02 00 CMD VAL CRC`): the decoder discards them as
+  an unknown length, which is correct. Neither they nor a GATT write completion confirm anything.
+- **Scene reports zero hue/saturation**: entering scene mode the light reported hue 0 and saturation 0
+  (proof log), so seeded HSI values from a scene report are 0/0, a real but dull starting point.
+  Scene 20's hue/saturation confirmation is static evidence only until hardware acceptance.
+- **Controls need a baseline per light**: every member must have connected once (its first report
+  is adopted as intent) before group edits work; edits never invent defaults for a missing member.
 
 _Living doc — refresh with /project-docs when it drifts._

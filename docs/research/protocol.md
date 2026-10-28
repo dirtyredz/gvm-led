@@ -180,3 +180,18 @@ Run: `src/research/ble/live_test.py --run --camera` via `scripts/owner/prove-lig
 ### Photo check of the re-run (2026-10-26, run `live-test-20261026-205223`, Agent Eye, all 17 frames)
 
 Light 1 = right fixture and light 2 = left fixture, as the camera sees them. Frames match the reports: step 01 right red, left unchanged; 02 right blue; 03 right paler; 04 left green, right unchanged; 05 both magenta; 06 warm vs 07 cool; 10–12 both dark (sets and the mode change while off stay dark); 13 only the right one on; 15 both amber after reconnect (the colour-bug fix, seen on camera); 16 both warm white. Not visually confirmed: scenes 19/20 (frames 08/09 overexposed) and step 14, where light 2 reported on (scene 20, 0.5 s) but looked dark in the frame, probably a flashing scene caught mid-blink.
+
+## App control rules derived from the proof (2026-10-28)
+
+Used by the Android control slices (`light/control/`, `light/protocol/SceneCatalog.kt`):
+
+- **Transaction order:** mode `06` first, then the mode values (CCT `03`; hue `04`, saturation `05`;
+  scene `07` then that scene's CCT, colour and effect time `08`), brightness `02`, power `00` last.
+  The proof showed values set while off are stored and a mode change never powers the light on.
+- **Scene applicability (rgb33, static evidence from `Activity/MainActivity.java`):** scenes 1-20;
+  brightness for all; CCT for 5, 9, 10, 12 and 19; effect time (1-50 x 100 ms) for 6, 7, 14, 15, 19
+  and 20; hue/saturation for 20. Hardware-proven: scenes 19 and 20 with effect times.
+- **Reports in scene mode** carried hue 0 and saturation 0; reports keep scene/time after leaving
+  scene mode. Set echoes are 8-byte kind-02 frames (`4C 54 08 ID TYPE 02 00 CMD VAL CRC`).
+- **Confirmation:** only a full 0x03 report received after the final write, compared on power,
+  mode, brightness and the fields the mode or scene uses.

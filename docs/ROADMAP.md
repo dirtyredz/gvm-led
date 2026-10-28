@@ -13,6 +13,8 @@
    install (dk-e4d11f1a) -> 2C N-light catalog and discovery (dk-fbd96793) -> 2D named groups
    (dk-56cb775c), implemented on branch `settings-and-groups`, owner acceptance pending. Then revised
    3 (per-light wanted state, dk-3189df72) -> revised 4 (confirmed apply and colour fix, dk-84d5132d) ->
-   revised 5 (individual and group controls, dk-b31f4e95).
+   revised 5 (individual and group controls, dk-b31f4e95): implemented and unit-tested on branch
+   `controls`; on-light acceptance from a signed GitHub release is next
+   ([controls-acceptance.md](mobile/controls-acceptance.md)).
 
 _Living doc — refresh with /project-docs when it drifts._

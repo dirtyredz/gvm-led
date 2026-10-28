@@ -1,5 +1,24 @@
 # DECISIONS
 
+## 2026-10-28 — Control: per-light intent, full replay, receipt-stamped confirmation (revised slices 3-5)
+**Decision:** (1) Wanted state is per address with its own revision, in its own store; groups only
+select members, and an edit is validated for every member before any is saved. (2) Every
+transaction is complete and mode first, with power last (proven order: values sent while off are
+stored and a mode change never powers on). (3) Replay the full transaction on every new connection
+generation (connect, reconnect, foreground) and every revision; after confirmation, write nothing
+more (the knobs are disabled in app mode, so nothing else changes the light during a session).
+(4) Confirm only from a full report whose ingress receipt stamp is after the final write, in the
+same generation; 3 rounds of ~6 s, then Not confirmed and a capped-backoff reconnect. (5) The
+light domain is grouped under `light/` (`ble`, `connection`, `protocol`, `control`) to keep the
+app's top level within the breadth cap. (6) Sliders apply on release; a drag is one revision.
+**Deviations from the plan's placement:** `K/control/*`, `K/connection/*` and `K/protocol/*` live under
+`K/light/`; `DesiredLightState` is named `WantedState` (the docs' vocabulary); `ControlTarget` lives in
+`data/model/` because it resolves against the catalog.
+**Rejected:** wall-clock or processing-time freshness (queued notifications would look fresh);
+confirming from set echoes or GATT completion; per-light clamping of a group CCT; a shared command
+queue across lights (one unreachable light would block the rest); live-while-dragging writes (each
+step would restart a ~1 s transaction).
+
 ## 2026-10-28 — Settings, explicit GitHub updates and named groups (plan Amendment A)
 **Decision:** (1) Updates are checked only when the owner taps Check, against GitHub's public
 `releases/latest` (no token, no polling, no telemetry); `INTERNET` is used for nothing else.

@@ -6,8 +6,9 @@ Custom controller for two GVM 800D3X-RGB lights over the legacy plain BLE GATT p
 BLE reference and owner-run proof tooling are complete. Android slice 1 provides the scaffold and
 pure packet codec; slice 2 adds read-only BLE discovery, one session per light and live state.
 Amendment A slices 2A-2D add Settings, owner-initiated GitHub updates with a verified installer
-hand-off, a persistent N-light catalog with discovery, and named groups. Controls (wanted state,
-command planning, confirmation) remain future slices.
+hand-off, a persistent N-light catalog with discovery, and named groups. Revised slices 3-5 add
+per-light wanted state, mode-first command planning, receipt-stamped confirmation with reconnect
+recovery (the colour-bug fix) and individual/named-group controls.
 
 ## Architecture at a glance
 
@@ -23,7 +24,7 @@ docs/
 ├── research/    # protocol write-up (static analysis + live findings)
 ├── plans/       # implementation plans
 ├── items/       # Docket work items (dk only)
-└── mobile/      # Android distribution runbook (android-distribution.md)
+└── mobile/      # Android distribution runbook and controls owner acceptance
 src/
 ├── mobile/android/          # independent pinned Gradle build
 │   ├── app/src/
@@ -45,22 +46,23 @@ test/mobile/releases/  # node --test suites for the release tooling (fakes only)
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/` — process ownership (`GvmApplication`), explicit dependency wiring (`AppContainer`) and the activity (composition, lifecycle, permission/enable dialogs).
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/light/` — the light domain, grouped under one parent so the app's top level stays within the breadth cap: `ble/`, `connection/`, `protocol/` and `control/`. Holds no files of its own.
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/light/ble/` — Android BLE adapters (`BleScanner`, `GattConnection`, `BluetoothRadio`) plus their pure helpers (`GattOperationQueue`, `BlePermissionPolicy`, `LegacyGattProfile`).
-- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/light/connection/` — Android-free connection logic: the `LightTransport`/`LightScanner` seams, `DiscoveryFilter`, the shared scan and candidates (`LightDiscovery`), one `LightSession` per address, `ConnectionCoordinator` (per-address reconciliation), `ReconnectBackoff` and the visible state types.
+- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/light/connection/` — Android-free connection logic: the `LightTransport`/`LightScanner` seams, `DiscoveryFilter`, the shared scan and candidates (`LightDiscovery`), one `LightSession` per address with its generation-scoped `LightCommandPort` and paced `SessionWriter`, `ConnectionCoordinator` (per-address reconciliation), `AppVisibility` (the lifecycle seam), `ReconnectBackoff` and the visible state types.
+- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/light/control/` — Android-free control: `WantedState`/`WantedRecord`/`CctRange`, `ModeCommandPlanner` (complete mode-first plans) and `StateMatcher`, `TargetEditPlanner` (`LightEdit` over a member snapshot) and `TargetStateReducer` (Same/Mixed/Unknown, CCT intersection), `ApplyStatus`, one `LightSynchronizer` per light and the `LightSynchronizers` pool.
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/data/json/` — the app's small strict JSON reader/writer (`Json`), shared by update metadata and catalog persistence.
-- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/data/model/` — persisted catalog values (`KnownLight`, `LightGroup`, `LightCatalog` and its validation).
-- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/data/local/` — catalog persistence: pure version-1 migration/encoding (`LightCatalogCodec`) and the SharedPreferences adapter (`LightCatalogPreferences`).
+- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/data/model/` — persisted catalog values (`KnownLight`, `LightGroup`, `LightCatalog` and its one validation) and `ControlTarget` (light or group selection, member resolution).
+- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/data/local/` — catalog persistence: pure version-1 migration/encoding (`LightCatalogCodec`) and the SharedPreferences adapter (`LightCatalogPreferences`); wanted-state persistence (`WantedStateCodec`, `WantedStatePreferences`, its own file).
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/data/remote/` — bounded HTTPS with redirect/host policy (`HttpsRequests`), the GitHub release client and the streamed APK download.
-- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/data/repository/` — the catalog boundary and serialized mutations (`LightCatalogStore`, `LightCatalogRepository`) and observations joined with names (`LightsRepository`).
+- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/data/repository/` — the catalog boundary and serialized mutations (`LightCatalogStore`, `LightCatalogRepository`), wanted intent (`WantedStateStore`, `LightControlRepository`: validate a target batch, persist, then publish) and observations joined with names, intent and apply status (`LightsRepository`).
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/update/` — Android-free updater: bundled contract, manifest validation, version mapping, release policy, ready-file handling, state and the `UpdateController` state machine with its ports.
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/update/android/` — platform adapters: contract asset loader, installed identity, APK inspection, signer digests by API level, installer/settings intents.
-- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/light/protocol/` — Android-free CRC, shared frame format, packet encoding, typed message parsing and bounded stream decoding.
-- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/feature/lights/` — Lights screen, target selection (`LightTargets`: individual lights and named groups), card rendering, ViewModel and display mapping (`LightsUiState`).
+- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/light/protocol/` — Android-free CRC, shared frame format, packet encoding (`SetCommand`, `LegacyCommand`), typed message parsing, bounded stream decoding and the rgb33 `SceneCatalog`.
+- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/feature/lights/` — Lights screen, target chips (`TargetSelector`), state mapping (`LightTargets`, `LightsUiState` with apply wording), controls (`LightControls`, `SceneControls`; edits built in `ControlEdits`), card rendering and the ViewModel.
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/feature/settings/` — Settings screen, app identity and update card (`SettingsUiState`); `lights/` light management (find, add, rename); `groups/` group list and editor.
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/ui/navigation/` — `GvmApp`: destinations, the saved back stack and ViewModel factories (no navigation library).
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/ui/components/` — shared composables: radio banner/actions, screen frame, name dialog.
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/ui/theme/` — Material 3 root surface.
 - `src/mobile/android/app/src/main/res/` — application strings, theme, launcher, backup policy and the FileProvider path (`xml/update_paths.xml`).
-- `src/mobile/android/app/src/test/java/com/dirtyredz/gvmled/` — JUnit tests mirroring the production packages (`light/{protocol,ble,connection}/`, the last with shared vectors plus scriptable transport/factory and scanner fakes, `data/{json,local,remote,repository}/`, `update/` and `update/android/`, `feature/{lights,settings}/`).
+- `src/mobile/android/app/src/test/java/com/dirtyredz/gvmled/` — JUnit tests mirroring the production packages (`light/{protocol,ble,control,connection}/`, the last with a `SimulatedLight` and shared vectors plus scriptable transport/factory and scanner fakes, `data/{json,local,remote,repository}/`, `update/` and `update/android/`, `feature/{lights,settings}/`).
 - `.github/workflows/` — `ci.yml` (strict Android unit, debug assembly and lint gate plus the release-tooling Node tests; no publication), `release.yml` (dispatch on main: version, verify, unsigned build, draft), `release-resume.yml` (restore a draft from a retained build artifact; never rebuilds or signs).
 - `src/mobile/releases/` — release contract and identity (`release-contract.{json,js}`, `signing-certificate.json` public pin), `version.js` (allocation, CI identity), `manifest.js` (phone-release.json), `prepare.js` (CI unsigned staging).
 - `src/mobile/releases/process/` — bounded, redacting child execution for release tools.
@@ -78,7 +80,7 @@ test/mobile/releases/  # node --test suites for the release tooling (fakes only)
 ## Components
 
 - **Research** — `docs/research/protocol.md`: source of truth for the protocol.
-- **Android app** — `src/mobile/android/`: an Android-free codec (bounded stream decoder, typed replies), Android-free connection logic behind a transport seam, thin Android BLE adapters, a read-only Compose screen of live per-light state, Settings with GitHub updates, light management and named groups.
+- **Android app** — `src/mobile/android/`: an Android-free codec (bounded stream decoder, typed replies), Android-free connection logic behind a transport seam, Android-free control (wanted state, planning, confirmation), thin Android BLE adapters, a Compose Lights screen with individual and group controls, Settings with GitHub updates, light management and named groups.
 - **Owner-run plumbing** — `scripts/owner/`: logging/dry-run wrapper plus an example step and test.
 - **BLE reference** — `src/research/ble/` contains the tracked codec, client, camera observer, proof runner and tests.
 

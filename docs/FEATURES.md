@@ -16,8 +16,15 @@
 - Any number of lights: persistent catalog (version-1 names migrated), Find, Add and Rename in
   Settings (2C) — implemented and unit-tested with three fake lights; N>2 hardware acceptance pending
 - Named groups: create, edit, delete; Lights target chips, read-only (2D) — implemented and unit-tested
-- Android app controls (set commands, wanted state, confirmation; individual and group targets) —
-  planned (revised slices 3-5, plan Amendment A)
+- Per-light wanted state, persisted separately and adopted from the first report (revised slice 3)
+  — implemented and unit-tested; owner acceptance is the upgrade/restart check
+- Confirmed apply with reconnect recovery: mode-first full replay on every connect, resume and edit,
+  confirmation only from a fresh full report, 3 rounds then Not confirmed and reconnect (revised
+  slice 4, the colour-bug fix) — implemented and unit-tested; on-light acceptance pending
+- Individual and named-group controls: power, mode, brightness, CCT (members' range intersection),
+  hue (5-degree steps), saturation, scenes 1-20 with applicable parameters, Mixed/Unknown values and
+  per-member status (revised slice 5) — implemented and unit-tested; on-light acceptance pending.
+  Owner steps: [controls-acceptance.md](mobile/controls-acceptance.md)
 - Android release pipeline: CI unsigned APK on a draft release, retained-artifact draft recovery,
   local signing with a GVM-only key from 1Password, verified publication and `adb` install with
   installed-version read-back (`scripts/owner/{new-signing-key,publish-release,install-release}.ps1`)

@@ -21,8 +21,8 @@ Ports and adapters: `light/connection/` is Android-free and depends only on two 
 
 - **Radio gate.** `BluetoothRadio` publishes `RadioState` (Unavailable, PermissionRequired,
   PermissionDenied, Off, Ready) from `BlePermissionPolicy`; only Ready lets anything scan or connect.
-- **Coordinator.** While the activity is started (`MainActivity.onStart/onStop`; configuration changes
-  keep links), `ConnectionCoordinator` runs one shared unfiltered scan only while some light is
+- **Coordinator.** While the app is in the foreground (`MainActivity.onStart/onStop` report it to
+  `AppVisibility`, the one lifecycle seam; configuration changes keep links), `ConnectionCoordinator` runs one shared unfiltered scan only while some light is
   Searching, classifies advertisements by address (`DiscoveryFilter`; unknown `BT_LED` devices are
   listed, never connected) and runs one loop per configured address: search, connect once, wait
   (1 s after a live link, doubling to 30 s after failures), then require a fresh sighting.
@@ -32,7 +32,8 @@ Ports and adapters: `light/connection/` is Android-free and depends only on two 
   discover (the adapter validates the legacy service/characteristic), enable notifications and wait
   for the CCCD write, then hello every 1 s for up to 5 attempts. Identity and CCT bounds come only
   from a valid hello. Each valid full report matching that identity becomes the observed state and
-  is acknowledged (0x48). Writes are paced at least 200 ms apart. Short replies never change state.
+  is acknowledged (0x48). Every write of a generation (hello, acks, sets) goes through one
+  `SessionWriter`: one at a time, at least 200 ms apart. Short replies never change state.
 - **Android adapter.** `GattConnection` serializes GATT operations through `GattOperationQueue`
   (callback-completed, kind-matched, timed out), writes without response, and ignores callbacks
   after close or from another `BluetoothGatt`. `BleScanner` remembers each scanned `BluetoothDevice`
@@ -40,7 +41,7 @@ Ports and adapters: `light/connection/` is Android-free and depends only on two 
 - **State and UI.** `LightConnection` keeps the last report with its generation; it is current only
   while Live in that generation, otherwise shown as last known. `LightsRepository` joins names from
   the catalog (below). `LightsViewModel` maps wire units for display
-  (`LightsUiState`). No set commands exist yet; wanted state and confirmation arrive in slices 3-4.
+  (`LightsUiState`). Control is described below (slices 3-5).
 
 ## Amendment A: catalog, discovery, groups and updates (slices 2A-2D)
 - **Catalog vs wanted state.** `LightCatalogRepository` owns the known lights (normalized address,
@@ -48,8 +49,8 @@ Ports and adapters: `light/connection/` is Android-free and depends only on two 
   versioned JSON snapshot in SharedPreferences (`LightCatalogPreferences`, rules in
   `LightCatalogCodec`). Version 1 migrates once, keeping custom names; only a fresh install is
   seeded. Mutations are serialized and written with `commit()` before the flow publishes; unreadable
-  data pauses changes until an explicit reset. Wanted state (revised slice 3) will be a separate
-  per-address store: groups are selections, never owners of settings.
+  data pauses changes until an explicit reset. Wanted state is a separate per-address store
+  (below): groups are selections, never owners of settings.
 - **Dynamic sessions, one scan.** `ConnectionCoordinator` reconciles one `LightSession` per catalog
   address; unchanged links keep running, and a removed address's job is cancelled and joined before
   the address can get a new session. `LightDiscovery` is the single scanner: it runs while a light
@@ -57,8 +58,44 @@ Ports and adapters: `light/connection/` is Android-free and depends only on two 
   fresh sightings (each used up by one attempt) and unknown `BT_LED` adverts into expiring
   candidates. Adding a candidate only enrolls its address; the session then proves the legacy
   profile and hello. Establishment stays serialized by one mutex; established links run concurrently.
-- **Targets.** Lights shows chips for every light and every group (no implicit Both/All); the
-  selection is a key (`light:<address>` / `group:<id>`) that falls back to the first light if deleted.
+- **Targets.** Lights shows chips for every light and every group (no implicit Both/All). The
+  selection is a `ControlTarget` (`Light(address)` / `Group(id)`, saved as `light:`/`group:` keys)
+  whose `members(catalog)` is the only target-to-address resolution; a deleted target falls back to
+  the first light.
+
+## Control: wanted state, confirmed apply, targets (revised slices 3-5)
+- **Wanted vs observed.** Observed state is the last full report (`LightConnection`, with generation
+  and a monotonic receipt stamp). Wanted state is `WantedRecord(revision, WantedState)` per address,
+  in wire units, each mode keeping its own values; unknown values stay null. `LightControlRepository`
+  is its only writer (`WantedStateCodec`/`WantedStatePreferences`, its own SharedPreferences file).
+  With no stored intent, a light's first valid full report is adopted (scene 0, effect time 0 and
+  an out-of-range CCT stay unknown) and counts as confirmed without any write.
+- **Edits.** An action resolves its target to a member snapshot, patches only the edited fields of
+  each member's own state (`LightEdit`; `fillOnly` values only fill gaps on a mode or scene switch),
+  validates every member (`TargetEditPlanner`: baseline present, required values present and legal,
+  an edited CCT inside that member's hello range), then saves the batch before publishing it. One
+  failing member rejects the edit with its name; nothing is clamped per light. Overlapping groups
+  converge by each light's latest revision.
+- **Plans.** `ModeCommandPlanner`: mode 06 first, the mode's values (CCT 03; hue 04 and saturation
+  05; scene 07 then that scene's CCT/colour/effect time from `SceneCatalog`), brightness 02, power 00
+  last. A CCT outside the current hello range blocks the plan (status Blocked), never clamps.
+- **Synchronizers.** `LightSynchronizers` keeps one `LightSynchronizer` per current session. It acts
+  only through the session's `LightCommandPort`, which exists only while a generation is live and
+  refuses writes once it ends. On every new port (connect, reconnect, resume) and every new revision
+  it cancels in-flight writes and replays the complete transaction. Confirmation needs a full report
+  in the same generation whose receipt stamp (taken at `GattConnection` notification ingress) is
+  after the transaction's final write completed, matching power, mode, brightness and the fields the
+  mode/scene uses (`StateMatcher`). A fresh mismatch or ~6 s without a fresh report retries the whole
+  transaction; after 3 rounds the status is Not confirmed and, after capped backoff, the port drops
+  the generation so the coordinator reconnects and the replay starts again. After confirmation
+  nothing is written until the next edit or connection. Backgrounding releases connections, which
+  cancels all of this; there is no shared command queue, so one light never blocks another.
+- **Targets and UI.** `TargetStateReducer` turns members' wanted states into one value, Mixed or
+  Unknown per field, plus the CCT intersection (greatest minimum to smallest maximum; disabled with a
+  reason when any member lacks a range or they do not overlap). Lights shows power (explicit On/Off),
+  mode, brightness, mode-specific controls only when the mode is common, per-light apply status on
+  each card and a group outcome ("2 of 3 confirmed; Fill waiting for connection"). Sliders apply on
+  release (one revision per drag).
 - **Updates (owner-initiated only).** `UpdateController` (process-scoped) asks
   `GitHubReleaseClient` for `releases/latest`, applies `ReleasePolicy` (published `android-v` tag,
   contract asset URLs, one manifest, the exact signed APK name), validates `phone-release.json`
@@ -83,7 +120,7 @@ Lights push a state report (kind 03) after hello and about every 4 s.
 
 ## Commands
 power 00, pick 01, brightness 02 (0-100), CCT 03 (K/100), hue 04 (deg/5), saturation 05, mode 06 (1 CCT, 2 HSI, 3 scenes), scene 07, effect time 08.
-The "colour bug" fix: always send mode 06=02 first, then hue, saturation, brightness, and confirm via the state report.
+The "colour bug" fix: always send mode 06=02 first, then hue, saturation, brightness (power last), and confirm via a fresh full state report; replay on every connect.
 
 ## Release pipeline
 Android releases use an attended two-part pipeline. `release.yml` allocates the next version on
