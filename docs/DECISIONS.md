@@ -1,5 +1,20 @@
 # DECISIONS
 
+## 2026-10-28 — Settings, explicit GitHub updates and named groups (plan Amendment A)
+**Decision:** (1) Updates are checked only when the owner taps Check, against GitHub's public
+`releases/latest` (no token, no polling, no telemetry); `INTERNET` is used for nothing else.
+(2) A valid newer release is downloaded in-app, verified (size, SHA-256, package, version, minSdk,
+pinned signer, installed signer) and handed to Android's installer; the browser release page is the
+fallback (missing manifest, debug build, denied install permission). (3) Groups are named
+selections of addresses; wanted state stays per light. (4) Any number of lights: per-address
+sessions reconciled from the catalog, one shared scan, establishment serialized by one mutex while
+live links run concurrently. (5) A small strict in-app JSON codec (`data/json`) instead of org.json
+(unavailable in local unit tests) or kotlinx-serialization (a new dependency plus compiler plugin).
+**Supersedes:** only the "no updater" part of deviation (6) in the 2026-10-28 release decision below.
+**Rejected:** browser-only updates (no integrity check or progress); background checks; a
+navigation library or Room (a saved back stack and one SharedPreferences snapshot suffice);
+automatic "Both"/"All" groups; group-owned wanted state.
+
 ## 2026-10-28 — Android releases: CI unsigned draft, local 1Password signing (Command Deck's attended flow)
 **Decision:** Port Command Deck's attended Android release closure (`scripts/mobile/{release,secrets}.js`,
 `src/mobile/releases/`, `release.yml` Android chain, `release-resume.yml`) with GVM identity: CI builds an
