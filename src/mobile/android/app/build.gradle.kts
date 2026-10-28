@@ -53,6 +53,7 @@ dependencies {
     // Keep the Compose/activity transitive runtime on the same supporting-library pins as CD.
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.kotlinx.coroutines.android)
     constraints { implementation(libs.kotlinx.serialization.core) }
     implementation(libs.androidx.activity.compose)
@@ -60,4 +61,5 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

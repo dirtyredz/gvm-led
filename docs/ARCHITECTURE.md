@@ -4,16 +4,43 @@
 A controller talks directly to each light over BLE; no cloud, no mesh, no pairing.
 
 ## Android slice 1
-`src/mobile/android/` is an independent Compose app. MainActivity composes a placeholder
-LightsScreen inside a Material 3 root surface. There are no sessions, permissions or control actions yet.
+`src/mobile/android/` is an independent Compose app. Slice 1 added the Compose shell and codec; slice 2 (below) adds sessions and a read-only screen.
 The Android-free `protocol/` package owns shared frame constants, CRC, outgoing framing and typed
-hello/full/short replies. Each future connection owns its own LegacyFrameDecoder, calling reset on
+hello/full/short replies. Each LightSession owns its own LegacyFrameDecoder, calling reset on
 disconnect. The decoder bounds buffering to 17 bytes, resynchronizes the byte stream and verifies
 frame length and CRC before handing a complete frame to LegacyMessageParser. The parser dispatches
 payload validation to the reply type that owns it. Resynchronization can skip a truncated candidate
 when a later complete valid frame arrives.
-Only a decoded FullStateReport can be acknowledged, preserving all nine payload bytes.
+Only a decoded FullStateReport can be acknowledged; its nine named, validated fields re-serialise to the exact payload.
 ShortStateReply has no mode/HSI fields and cannot serve as full-state confirmation.
+
+## Android slice 2: discovery and read-only live state
+Ports and adapters: `connection/` is Android-free and depends only on two seams, `LightScanner`
+(advertisements) and `LightTransport` (one GATT link: connect, subscribe, write, events, close).
+`ble/` implements them (`BleScanner`, `GattConnection`) and `AppContainer` wires them; tests use fakes.
+
+- **Radio gate.** `BluetoothRadio` publishes `RadioState` (Unavailable, PermissionRequired,
+  PermissionDenied, Off, Ready) from `BlePermissionPolicy`; only Ready lets anything scan or connect.
+- **Coordinator.** While the activity is started (`MainActivity.onStart/onStop`; configuration changes
+  keep links), `ConnectionCoordinator` runs one shared unfiltered scan only while some light is
+  Searching, classifies advertisements by address (`DiscoveryFilter`; unknown `BT_LED` devices are
+  listed, never connected) and runs one loop per configured address: search, connect once, wait
+  (1 s after a live link, doubling to 30 s after failures), then require a fresh sighting.
+- **Session.** `LightSession` is the only owner of its light's link. Each `connectOnce` is a new
+  generation that creates, uses and always closes one transport. Establishment holds a shared mutex,
+  so lights connect one after another; the live phase runs concurrently. Order: connect and
+  discover (the adapter validates the legacy service/characteristic), enable notifications and wait
+  for the CCCD write, then hello every 1 s for up to 5 attempts. Identity and CCT bounds come only
+  from a valid hello. Each valid full report matching that identity becomes the observed state and
+  is acknowledged (0x48). Writes are paced at least 200 ms apart. Short replies never change state.
+- **Android adapter.** `GattConnection` serializes GATT operations through `GattOperationQueue`
+  (callback-completed, kind-matched, timed out), writes without response, and ignores callbacks
+  after close or from another `BluetoothGatt`. `BleScanner` remembers each scanned `BluetoothDevice`
+  so connections use the address type the scan reported.
+- **State and UI.** `LightConnection` keeps the last report with its generation; it is current only
+  while Live in that generation, otherwise shown as last known. `LightsRepository` joins names from
+  `LightPreferences` (versioned; seeds the two addresses). `LightsViewModel` maps wire units for display
+  (`LightsUiState`). No set commands exist yet; wanted state and confirmation arrive in slices 3-4.
 
 ## Link
 - Light advertises as `BT_LED`, Telink SoC (USB VID 0x248A). Address is the per-light identity.

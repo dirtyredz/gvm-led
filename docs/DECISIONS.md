@@ -1,5 +1,18 @@
 # DECISIONS
 
+## 2026-10-28 — Android BLE behind a transport seam; foreground-only links
+**Decision:** Connection logic (`connection/`) is Android-free and talks to the platform only through
+`LightTransport` (one GATT generation) and `LightScanner`; `ble/` holds the thin Android adapters.
+Links run only while the activity is started; a reconnect needs a fresh scan sighting and backs off
+(1 s after a live link, 2-30 s after failures). Establishment is serialized across lights by a
+mutex; established links run concurrently. Read-only slice: hello and report acknowledgements are
+the only writes. `FullStateReport` now holds named validated fields (dk-6ae712b8).
+**Why:** The plan's fake-transport tests (subscription before hello, single ownership, reconnect)
+need the GATT boundary to be replaceable; Kotlin counterpart of dk-162fd49a. Foreground-only keeps
+connection ownership predictable and leaves the light free for other clients when the app is closed.
+**Rejected:** Blind reconnects to a cached device (slow GATT timeouts while out of range); one
+combined session/coordinator class; the full AppVisibility seam now (it belongs to slice 4 resume).
+
 ## 2026-10-26 — Build a native Android app
 **Decision:** Use the native Android architecture specified in `plans/android-app.md`.
 **Why:** A phone keeps the controller near the lights, provides native BLE access, and fits the

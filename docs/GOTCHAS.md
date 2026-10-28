@@ -16,6 +16,19 @@
   real short replies from `live-test-20261026-001316.log`, and set TX from the Python DRY RUN
   `live-test-20261026-001349.log` (type 30 placeholder), read from main's ignored
   `.tmp/owner-runs/`. Dry-run set vectors prove encoding parity, not visible hardware effects.
+- **Android: never filter scans by the legacy service.** The lights advertise 0x180F/0x1812, not
+  `...1910`; scan unfiltered, identify by address, validate the service after discovery.
+- **Android: connect with the scanned `BluetoothDevice`.** The addresses are random static; a device
+  built with `getRemoteDevice` may assume a public address type. A reconnect waits for a fresh sighting.
+- **Android: CCCD before hello.** Enable notifications locally, write the CCCD and wait for
+  `onDescriptorWrite` before the first hello, or the hello reply can be missed. One outstanding GATT
+  operation at a time (`GattOperationQueue`); no-response writes still complete via `onCharacteristicWrite`.
+- **Android: one `BluetoothGatt` per light, always closed.** A leaked or second GATT client holds the
+  light's only connection (like the phone app does); every failed or ended generation calls `close()`.
+- **Android: scan budget.** Starting scans more than 5 times in 30 s silently returns nothing; the
+  coordinator scans only while a light is searching. Through API 30, scans also need Location on.
+- **Reports arrive about every 4 s** after hello; an idle screen with a Live status is normal between them.
+  All packets fit the default 23-byte MTU (largest is an 18-byte ack), so no MTU request is made.
 
 - **Windows connect fails with "device not found"** -> bleak/WinRT needs the device seen in a scan first -> scan, then connect (the scripts do).
 - **Connect refused or characteristic missing** -> a light accepts one connection; the phone app (or a previous connection) holds it -> close the GVM app; connect to lights sequentially; retry once after a disconnect ("Characteristic not found").
