@@ -49,6 +49,43 @@ kotlin {
     compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
 }
 
+// The release contract and signer pin stay authoritative in src/mobile/releases/; the app bundles
+// copies as assets (release/...) so the updater validates GitHub releases against the same rules.
+abstract class BundleReleaseContract : DefaultTask() {
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NAME_ONLY)
+    abstract val sources: ConfigurableFileCollection
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun copy() {
+        val target = outputDir.get().asFile.resolve("release")
+        target.deleteRecursively()
+        target.mkdirs()
+        sources.files.forEach { it.copyTo(target.resolve(it.name), overwrite = true) }
+    }
+}
+val releaseToolingDir = layout.projectDirectory.dir("../../releases")
+val bundleReleaseContract = tasks.register<BundleReleaseContract>("bundleReleaseContract") {
+    sources.from(releaseToolingDir.file("release-contract.json"), releaseToolingDir.file("signing-certificate.json"))
+}
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(bundleReleaseContract, BundleReleaseContract::outputDir)
+    }
+}
+// Unit tests read the shared manifest fixtures (also checked by the Node validator) and the contract.
+android.sourceSets.getByName("test").resources.srcDirs(
+    layout.projectDirectory.dir("../../../../test/mobile/releases/fixtures"),
+)
+tasks.withType<Test>().configureEach {
+    systemProperty("gvm.releaseDir", releaseToolingDir.asFile.absolutePath)
+    inputs.files(releaseToolingDir.file("release-contract.json"), releaseToolingDir.file("signing-certificate.json"))
+        .withPathSensitivity(PathSensitivity.NAME_ONLY)
+}
+
 // No signing material in Gradle: CI builds unsigned and the owner signs locally
 // (docs/mobile/android-distribution.md).
 val unsignedRelease = providers.gradleProperty("unsignedRelease").orNull == "true"
@@ -70,6 +107,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlinx.coroutines.android)
     constraints { implementation(libs.kotlinx.serialization.core) }
     implementation(libs.androidx.activity.compose)
