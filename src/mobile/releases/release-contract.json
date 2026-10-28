@@ -1,0 +1,71 @@
+{
+  "$comment": "Canonical GVM LED Android distribution contract (docs/mobile/android-distribution.md). CI, the local signer and the owner scripts read this file. The trusted signer lives only in signing-certificate.json.",
+  "schema": 1,
+  "repository": "dirtyredz/gvm-led",
+  "branch": "main",
+  "packageName": "com.dirtyredz.gvmled",
+  "developmentPackageName": "com.dirtyredz.gvmled.debug",
+  "channel": "stable",
+  "tags": {
+    "android": "android-v"
+  },
+  "assets": {
+    "manifest": "phone-release.json",
+    "apkPrefix": "GVM-LED-",
+    "apkSuffix": "-android.apk",
+    "unsignedApkSuffix": "-android-unsigned.apk",
+    "provenance": "android-provenance.json",
+    "ciReference": "android-ci-reference.json"
+  },
+  "manifestFields": [
+    "schema",
+    "repository",
+    "channel",
+    "packageName",
+    "versionName",
+    "versionCode",
+    "minSdk",
+    "commit",
+    "certificateSha256",
+    "apk"
+  ],
+  "apkFields": ["name", "size", "sha256"],
+  "provenanceFields": [
+    "schema",
+    "repository",
+    "workflow",
+    "runId",
+    "runAttempt",
+    "runNumber",
+    "commit",
+    "tag",
+    "packageName",
+    "versionName",
+    "versionCode",
+    "contractSha256",
+    "unsignedApk"
+  ],
+  "ciReferenceFields": [
+    "schema",
+    "repository",
+    "workflow",
+    "runId",
+    "runAttempt",
+    "draftRunAttempt",
+    "artifactId",
+    "artifactName",
+    "artifactSha256",
+    "commit"
+  ],
+  "limits": {
+    "maxApkBytes": 104857600,
+    "maxManifestBytes": 8192,
+    "maxProvenanceBytes": 8192,
+    "maxCiReferenceBytes": 8192,
+    "maxVersionCode": 2100000000,
+    "minSdkFloor": 26,
+    "minSdkCeiling": 100,
+    "maxId": 9007199254740991,
+    "maxAssetsPerRelease": 20
+  }
+}

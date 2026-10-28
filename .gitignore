@@ -13,3 +13,9 @@ docs/plans/*.stderr.log
 /src/mobile/android/.kotlin/
 /src/mobile/android/**/build/
 /src/mobile/android/local.properties
+
+# Release tooling (package.json): dependencies and any private signing material.
+node_modules/
+*.p12
+*.jks
+*.keystore

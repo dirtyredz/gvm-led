@@ -1,0 +1,8 @@
+{
+  "$comment": "The sole trusted GVM LED Android signer (never Command Deck's). certificateSha256 stays null until scripts/owner/new-signing-key.ps1 records the verified permanent certificate; while null, CI refuses to prepare a release and the signer refuses to sign.",
+  "packageName": "com.dirtyredz.gvmled",
+  "alias": "gvm-led-release",
+  "certificateSha256": null,
+  "notAfter": null,
+  "bootstrapVersionCode": 1
+}

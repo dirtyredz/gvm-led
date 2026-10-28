@@ -16,7 +16,7 @@ See [ARCHITECTURE](docs/ARCHITECTURE.md).
 
 ```
 .github/
-└── workflows/ci.yml       # strict Android unit, assembly and lint gate
+└── workflows/           # ci.yml fast gate; release.yml unsigned draft; release-resume.yml recovery
 docs/
 ├── research/    # protocol write-up (static analysis + live findings)
 ├── plans/       # implementation plans
@@ -27,9 +27,12 @@ src/
 │   │   ├── main/            # Android application and resources
 │   │   └── test/            # local JUnit tests (mirrored packages, fake BLE)
 │   └── gradle/              # wrapper and dependency verification
+├── mobile/releases/         # Node release tooling: contract, CI draft, local signing (1Password)
 └── research/ble/            # Python reference + visible proof run (bleak)
 scripts/
+├── mobile/      # thin Node CLIs: release.js (CI), secrets.js (local key/signing)
 └── owner/       # owner-run PowerShell steps and plumbing
+test/mobile/releases/  # node --test suites for the release tooling (fakes only)
 .tmp/            # git-ignored: disposable research inputs and run output
 ```
 
@@ -46,9 +49,19 @@ scripts/
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/ui/theme/` — Material 3 root surface.
 - `src/mobile/android/app/src/main/res/` — application strings, theme, launcher and backup policy.
 - `src/mobile/android/app/src/test/java/com/dirtyredz/gvmled/` — JUnit tests mirroring the production packages (`protocol/`, `ble/`, `connection/` with the fake transport and scanner, `data/repository/`, `feature/lights/`).
-- `.github/workflows/ci.yml` — strict Android unit, debug assembly and lint gate; no publication.
+- `.github/workflows/` — `ci.yml` (strict Android unit, debug assembly and lint gate plus the release-tooling Node tests; no publication), `release.yml` (dispatch on main: version, verify, unsigned build, draft), `release-resume.yml` (restore a draft from a retained build artifact; never rebuilds or signs).
+- `src/mobile/releases/` — release contract and identity (`release-contract.{json,js}`, `signing-certificate.json` public pin), `version.js` (allocation, CI identity), `manifest.js` (phone-release.json), `prepare.js` (CI unsigned staging).
+- `src/mobile/releases/process/` — bounded, redacting child execution for release tools.
+- `src/mobile/releases/publishing/` — shared draft/provenance policy and the attended local publication (`publish.js`, `command.js`, `draft-state.js`, `lock.js`, `ci-reference.js`, `assets.js`).
+- `src/mobile/releases/publishing/ci/` — CI side: draft creation, tag claim, Actions evidence and retained-artifact resume.
+- `src/mobile/releases/publishing/github/` — GitHub transports: token client (CI) and `gh` session (owner PC).
+- `src/mobile/releases/publishing/steps/` — the publication stages: verify-source, sign, upload-and-verify, finalize.
+- `src/mobile/releases/signing/` — keystore identity, key generation/verification, certificate checks, temp material, APK inspection and signing.
+- `src/mobile/releases/secrets/` — 1Password plan (dry-run text, item names) and the SDK vault adapter.
+- `scripts/mobile/` — `release.js` (CI: next-version, prepare, draft, resume-source, resume) and `secrets.js` (owner PC: generate-key, verify-key, release-sign).
+- `test/mobile/releases/` — `node --test` suites mirroring `src/mobile/releases/`, with fakes for GitHub, build-tools and the vault (`helpers/`).
 - `src/research/ble/` — Python reference for the legacy protocol: `protocol.py` (framing, CRC, state decode; pure), `client.py` (one light's connection, hello, ack), `camera.py` (Agent Eye capture), `live_test.py` (visible proof orchestration), `test_protocol.py` and `test_camera.py` (unittest), `requirements.txt` (pinned bleak)
-- `scripts/owner/` — owner-run .ps1 steps: `owner-run.ps1` 1.0.0 (copied verbatim from ~/.claude/templates/scripts), `owner-run.test.ps1`, `example-owner-step.ps1`, and `prove-light-commands.ps1` (the slice-0 proof)
+- `scripts/owner/` — owner-run .ps1 steps: `owner-run.ps1` 1.0.0 (copied verbatim from ~/.claude/templates/scripts), `owner-run.test.ps1`, `example-owner-step.ps1`, and `prove-light-commands.ps1` (the slice-0 proof), and the release steps `new-signing-key.ps1`, `publish-release.ps1`, `install-release.ps1`
 
 ## Components
 
