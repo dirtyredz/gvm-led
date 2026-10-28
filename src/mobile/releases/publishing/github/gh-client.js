@@ -99,12 +99,18 @@ export function releaseApi({
 
   /** Streams asset bytes to `file` (at most maxBytes); returns {size, sha256}. */
   async function downloadAsset(assetId, file, maxBytes = CONTRACT.limits.maxApkBytes) {
-    return download(`/releases/assets/${assetId}`, assetId, file, maxBytes);
+    return download(
+      `/releases/assets/${assetId}`,
+      assetId,
+      file,
+      maxBytes,
+      "application/octet-stream",
+    );
   }
 
-  async function download(route, id, file, maxBytes) {
+  async function download(route, id, file, maxBytes, accept) {
     const response = await fetch(`${API}/repos/${repository}${route}`, {
-      headers: headers({ accept: "application/octet-stream" }),
+      headers: headers({ accept }),
       redirect: "follow",
       signal: AbortSignal.timeout(uploadTimeoutMs),
     });
@@ -119,7 +125,7 @@ export function releaseApi({
     upload,
     downloadAsset,
     downloadArtifact: (id, file, maxBytes) =>
-      download(`/actions/artifacts/${id}/zip`, id, file, maxBytes),
+      download(`/actions/artifacts/${id}/zip`, id, file, maxBytes, "application/vnd.github+json"),
     allReleases: (pageSize) => listAllReleases(request, pageSize),
   };
 }
