@@ -319,4 +319,4 @@ Run `dk check` before pushing and satisfy the existing repository review gate.
 - **Confirmation limitation:** The wire protocol has no transaction identifier. A matching report received after the final write is the strongest available evidence, not a correlated acknowledgement.
 - **Foreground operation:** No background service or continuous background control is planned. This keeps connection ownership predictable; lights retain their last settings while the app is closed.
 - **Scenes:** Twenty IDs are statically supported; representative hardware proof is sufficient initially. Do not describe every scene as hardware-verified.
-- **Repository/release identity:** Assume `dirtyredz/gvm-led`, default branch `master`, and GVM-specific 1Password items. Confirm these before provisioning release infrastructure; do not reuse CD’s signing identity.
+- **Repository/release identity:** Confirmed `dirtyredz/gvm-led` (public), default branch `main` (not CD's `master`: workflows gate on `refs/heads/main`), and GVM-specific 1Password items. Do not reuse CD’s signing identity.
