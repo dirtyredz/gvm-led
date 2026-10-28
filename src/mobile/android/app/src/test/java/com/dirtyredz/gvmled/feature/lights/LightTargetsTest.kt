@@ -25,7 +25,7 @@ class LightTargetsTest {
     )
     private val entries = catalog.lights.map { LightEntry(LightConnection(it.address), it.name) }
 
-    private fun state(selected: String?, known: LightCatalog = catalog) =
+    private fun state(selected: ControlTarget?, known: LightCatalog = catalog) =
         lightsState(RadioState.Ready, if (known === catalog) entries else emptyList(), known, selected, ZoneOffset.UTC)
 
     @Test fun resolveKeepsAValidSelection() {

@@ -63,13 +63,13 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         container.radio.refresh()
-        container.coordinator.start()
+        container.visibility.enterForeground()
         container.updates.refreshInstalled()
     }
 
     override fun onStop() {
         if (!isChangingConfigurations) {
-            container.coordinator.stop()
+            container.visibility.enterBackground()
             container.updates.onBackground()
         }
         super.onStop()

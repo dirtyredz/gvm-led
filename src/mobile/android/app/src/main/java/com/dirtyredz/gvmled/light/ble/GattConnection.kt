@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothProfile
 import android.bluetooth.BluetoothStatusCodes
 import android.content.Context
 import android.os.Build
+import android.os.SystemClock
 import com.dirtyredz.gvmled.light.connection.LightTransport
 import com.dirtyredz.gvmled.light.connection.TransportEvent
 import com.dirtyredz.gvmled.light.connection.TransportException
@@ -85,7 +86,8 @@ class GattConnection(
 
     private fun deliver(g: BluetoothGatt, c: BluetoothGattCharacteristic, value: ByteArray) {
         if (!ignored(g) && c.uuid == LegacyGattProfile.CHARACTERISTIC) {
-            incoming.trySend(TransportEvent.Notification(value.copyOf()))
+            // Stamped here, not when processed: a queued old report must never look fresh later.
+            incoming.trySend(TransportEvent.Notification(value.copyOf(), SystemClock.elapsedRealtime()))
         }
     }
 

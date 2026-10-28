@@ -34,6 +34,8 @@ data class LightConnection(
     val report: FullStateReport? = null,
     val reportGeneration: Int = 0,
     val reportAtMillis: Long? = null,
+    /** Monotonic receipt time of [report]'s notification; confirmation compares this, never [reportAtMillis]. */
+    val reportReceivedAtMillis: Long? = null,
     val lastError: String? = null,
 ) {
     val reportIsCurrent: Boolean

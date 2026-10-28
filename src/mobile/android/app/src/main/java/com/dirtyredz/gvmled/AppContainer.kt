@@ -8,11 +8,16 @@ import android.util.Log
 import com.dirtyredz.gvmled.light.ble.BleScanner
 import com.dirtyredz.gvmled.light.ble.BluetoothRadio
 import com.dirtyredz.gvmled.light.ble.GattConnection
+import com.dirtyredz.gvmled.light.connection.AppVisibility
 import com.dirtyredz.gvmled.light.connection.ConnectionCoordinator
 import com.dirtyredz.gvmled.light.connection.LightScanner
 import com.dirtyredz.gvmled.light.connection.LightTransportFactory
 import com.dirtyredz.gvmled.light.connection.LightDiscovery
 import com.dirtyredz.gvmled.data.local.LightCatalogPreferences
+import com.dirtyredz.gvmled.data.local.WantedStatePreferences
+import com.dirtyredz.gvmled.data.repository.LightControlRepository
+import com.dirtyredz.gvmled.light.control.CctRange
+import com.dirtyredz.gvmled.light.control.LightSynchronizers
 import com.dirtyredz.gvmled.data.repository.LightCatalogRepository
 import com.dirtyredz.gvmled.data.remote.ApkDownloader
 import com.dirtyredz.gvmled.data.remote.GitHubReleaseClient
@@ -33,6 +38,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * Explicit dependency construction (no DI framework). One instance per process, owned by
@@ -69,7 +75,27 @@ class AppContainer(context: Context) {
         log = log,
     )
 
-    val lights = LightsRepository(coordinator.lights, catalog.catalog)
+    /** The only lifecycle input for light work; the activity reports foreground/background here. */
+    val visibility = AppVisibility().also { seam ->
+        scope.launch { seam.foreground.collect { if (it) coordinator.start() else coordinator.stop() } }
+    }
+
+    val control = LightControlRepository(
+        store = WantedStatePreferences(app.getSharedPreferences("wanted", Context.MODE_PRIVATE)),
+        io = Dispatchers.IO,
+        catalog = catalog.catalog,
+        ranges = { coordinator.lights.value.associate { it.address to it.hello?.let(CctRange::of) } },
+    )
+
+    val synchronizers = LightSynchronizers(
+        sessions = coordinator.activeSessions,
+        wanted = control.wanted,
+        seed = control::seed,
+        scope = scope,
+        log = log,
+    )
+
+    val lights = LightsRepository(coordinator.lights, catalog.catalog, control.wanted, synchronizers.statuses)
 
     // Updates: user-initiated only. Nothing here touches the network until Check is tapped.
     val releaseContract = ReleaseContractLoader.load(app, log)

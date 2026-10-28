@@ -10,6 +10,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -49,6 +50,9 @@ class ConnectionCoordinator(
         discovery.setKnown(sessions.value.map { it.address })
         scope.launch { addresses.collect { reconcile(it) } }
     }
+
+    /** The current session per configured light; synchronizers attach to these. */
+    val activeSessions: StateFlow<List<LightSession>> = sessions.asStateFlow()
 
     /** One entry per configured light, in catalog order. */
     val lights: StateFlow<List<LightConnection>> = sessions

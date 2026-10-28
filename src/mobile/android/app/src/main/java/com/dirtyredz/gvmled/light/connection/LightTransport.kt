@@ -25,7 +25,8 @@ interface LightTransport {
 }
 
 sealed interface TransportEvent {
-    class Notification(val bytes: ByteArray) : TransportEvent
+    /** [receivedAtMillis] is the monotonic time the platform delivered it, stamped at ingress. */
+    class Notification(val bytes: ByteArray, val receivedAtMillis: Long) : TransportEvent
     data class Disconnected(val reason: String) : TransportEvent
 }
 

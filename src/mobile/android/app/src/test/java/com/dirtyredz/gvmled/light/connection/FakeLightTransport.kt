@@ -42,6 +42,8 @@ internal class FakeLightTransport(
     var connectFailure: String? = null
     /** Reply to every hello write with the captured hello reply. */
     var answerHello = true
+    /** Called with every written packet after it is logged (a simulated light hooks in here). */
+    var onWrite: (ByteArray) -> Unit = {}
 
     val writes = mutableListOf<Pair<Long, ByteArray>>()
     var closed = false
@@ -63,6 +65,7 @@ internal class FakeLightTransport(
         log += "$address write"
         writes += now() to packet
         if (answerHello && packet.contentEquals(Vectors.HELLO_REQUEST)) notify(Vectors.HELLO_REPLY)
+        onWrite(packet)
     }
 
     override fun close() {
@@ -71,8 +74,9 @@ internal class FakeLightTransport(
         channel.close()
     }
 
-    fun notify(bytes: ByteArray) {
-        channel.trySend(TransportEvent.Notification(bytes))
+    /** [receivedAt] defaults to now; an earlier stamp models a notification queued before processing. */
+    fun notify(bytes: ByteArray, receivedAt: Long = now()) {
+        channel.trySend(TransportEvent.Notification(bytes, receivedAt))
     }
 
     fun disconnect(reason: String) {

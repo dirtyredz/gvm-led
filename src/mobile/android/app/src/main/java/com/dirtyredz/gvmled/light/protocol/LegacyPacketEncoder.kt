@@ -1,6 +1,6 @@
 package com.dirtyredz.gvmled.light.protocol
 
-/** Wire framing only. Mode-specific ranges/order belong to the future control planner. */
+/** Wire framing only. Mode-specific ranges and order belong to `light/control/ModeCommandPlanner`. */
 object LegacyPacketEncoder {
     fun hello(): ByteArray = frame(0, 0, byteArrayOf(0x53, 0, 0, 1, 0))
 
