@@ -96,12 +96,12 @@ export function ghSessionApi({
   }
 
   /** Streams asset bytes to a new `file` (at most maxBytes); returns {size, sha256}. */
-  async function downloadAsset(assetId, file, maxBytes = CONTRACT.limits.maxApkBytes) {
+  async function download(route, assetId, file, maxBytes) {
     const child = spawnChild(
       "gh",
       [
         ...base("application/octet-stream", ["--method", "GET"]),
-        `repos/${repository}/releases/assets/${assetId}`,
+        `repos/${repository}${route}`,
       ],
       { env: childEnv("gh"), stdio: ["ignore", "pipe", "pipe"], windowsHide: true, shell: false },
     );
@@ -132,7 +132,10 @@ export function ghSessionApi({
     repository,
     request,
     upload,
-    downloadAsset,
+    downloadAsset: (id, file, maxBytes = CONTRACT.limits.maxApkBytes) =>
+      download(`/releases/assets/${id}`, id, file, maxBytes),
+    downloadArtifact: (id, file, maxBytes) =>
+      download(`/actions/artifacts/${id}/zip`, id, file, maxBytes),
     allReleases: (pageSize) => listAllReleases(request, pageSize),
   };
 }

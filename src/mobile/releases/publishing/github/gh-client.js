@@ -99,14 +99,18 @@ export function releaseApi({
 
   /** Streams asset bytes to `file` (at most maxBytes); returns {size, sha256}. */
   async function downloadAsset(assetId, file, maxBytes = CONTRACT.limits.maxApkBytes) {
-    const response = await fetch(`${API}/repos/${repository}/releases/assets/${assetId}`, {
+    return download(`/releases/assets/${assetId}`, assetId, file, maxBytes);
+  }
+
+  async function download(route, id, file, maxBytes) {
+    const response = await fetch(`${API}/repos/${repository}${route}`, {
       headers: headers({ accept: "application/octet-stream" }),
       redirect: "follow",
       signal: AbortSignal.timeout(uploadTimeoutMs),
     });
     if (!response.ok || !response.body)
-      throw fail(`downloading asset ${assetId} answered ${response.status}`, response.status);
-    return meterToFile(Readable.fromWeb(response.body), file, assetId, maxBytes);
+      throw fail(`downloading asset ${id} answered ${response.status}`, response.status);
+    return meterToFile(Readable.fromWeb(response.body), file, id, maxBytes);
   }
 
   return {
@@ -114,6 +118,8 @@ export function releaseApi({
     request,
     upload,
     downloadAsset,
+    downloadArtifact: (id, file, maxBytes) =>
+      download(`/actions/artifacts/${id}/zip`, id, file, maxBytes),
     allReleases: (pageSize) => listAllReleases(request, pageSize),
   };
 }

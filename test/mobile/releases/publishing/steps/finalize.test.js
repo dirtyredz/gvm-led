@@ -36,9 +36,7 @@ test("publication PATCH marks the release latest and the success line says so", 
 // a null `deps.pin` falls back to the committed pin.
 
 test("attended finalization preserves the validated CI reference beside provenance and signed output", async (t) => {
-  const s = await scenario(t, {
-    extraAssets: [["android-ci-reference.json", JSON.stringify(referenceFor())]],
-  });
+  const s = await scenario(t);
   await s.sign();
   assert.ok(
     s.github.releases
@@ -50,18 +48,14 @@ test("attended finalization preserves the validated CI reference beside provenan
 
 test("malformed or foreign CI references are rejected before signing", async (t) => {
   const s = await scenario(t, {
-    extraAssets: [
-      ["android-ci-reference.json", JSON.stringify({ ...referenceFor(), runAttempt: 2 })],
-    ],
+    ciReference: { ...referenceFor(), runAttempt: 2 },
   });
   await assert.rejects(s.sign(), /Invalid Android CI reference/);
   untouched(s);
 });
 
 test("a removed CI reference stops finalization before deleting unsigned bytes or publishing", async (t) => {
-  const s = await scenario(t, {
-    extraAssets: [["android-ci-reference.json", JSON.stringify(referenceFor())]],
-  });
+  const s = await scenario(t);
   const upload = s.deps.api.upload;
   s.deps.api.upload = async (...args) => {
     await upload(...args);

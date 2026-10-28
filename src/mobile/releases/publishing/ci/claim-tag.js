@@ -12,8 +12,8 @@
 //      or force-moves a leftover one;
 //   4. deletes the drafts the policy marked replaceable.
 //
-// `client.request(method, route, {allow404, body})` is gh-client.js's releaseApi
-// (a fake in tests). Dependency-free.
+// `client` is gh-client.js's releaseApi (a fake in tests). Its allReleases seam
+// supplies one bounded, paginated snapshot. Dependency-free.
 
 const fail = (code, message) => Object.assign(new Error(message), { code });
 
@@ -30,7 +30,7 @@ export async function claimReleaseTag({
 }) {
   if (await client.request("GET", `/releases/tags/${tag}`, { allow404: true }))
     throw fail("RELEASE_TAG_CONFLICT", `${tag} is already published; refusing to touch its tag`);
-  const releases = await client.request("GET", "/releases?per_page=100");
+  const releases = await client.allReleases();
   const drafts = releases.filter((r) => r.draft && r.tag_name === tag);
   const replace = [];
   const kept = [];

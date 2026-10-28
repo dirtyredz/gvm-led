@@ -28,6 +28,7 @@ test("a dry run names the GVM vault and the supplied draft, and opens nothing", 
   assert.match(keys.text, /vault GVM-LED/);
   const sign = await run(["release-sign", "--dry-run", "--tag", "android-v0.1.5", "--release-id", "9"]);
   assert.match(sign.text, /android-v0\.1\.5.*release 9.*dirtyredz\/gvm-led/);
+  assert.match(sign.text, /authenticate the Actions run and exact artifact/);
   // Reaching here without a 1Password SDK, Windows Hello or a child process is the point:
   // dry-run returns before openVault, so nothing could have been opened.
 });

@@ -58,7 +58,7 @@ export function dryRunLines(command, { tag, releaseId } = {}) {
     return [
       `would sign draft ${tag ?? "<--tag android-v...>"} (release ${releaseId ?? "<--release-id>"}) in ${REPOSITORY}`,
       "would require a clean checkout at the tag's commit and the approved contract and pin",
-      "would verify draft state, CI provenance and the unsigned APK hash, then inspect the unsigned APK",
+      "would authenticate the Actions run and exact artifact, match its provenance and APK to the draft, then inspect the unsigned APK",
       `would read ${ITEMS.password.ref} and ${describeSource("keystore")} through one SDK client`,
       `would run zipalign -p -f 4, then apksigner sign --ks-pass env:${PASS_ENV} (never argv)`,
       "would verify alignment, exactly one pinned signer, package, versions, minSdk, non-debuggable",

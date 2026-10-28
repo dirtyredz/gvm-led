@@ -35,6 +35,7 @@ test("happy path: sign, upload both, re-download both, delete only the unsigned 
   assert.equal(final.draft, false);
   assert.deepEqual(final.assets.map((a) => a.name).sort(), [
     SIGNED,
+    "android-ci-reference.json",
     "android-provenance.json",
     "phone-release.json",
   ]);
@@ -74,6 +75,22 @@ test("every refusal before upload leaves the release untouched", async (t) => {
       options: { release: { draft: false } },
       error: /is not the draft/,
     },
+    "missing CI reference": {
+      options: { noCiReference: true },
+      error: /CI reference is missing/,
+    },
+    "Actions run names another commit": {
+      options: { actionsCommit: "b".repeat(40) },
+      error: /CI evidence refused/,
+    },
+    "draft APK and provenance were replaced after CI": {
+      options: {
+        draftApk: Buffer.alloc(unsignedBytes.length, 0x78),
+        artifactApk: unsignedBytes,
+        artifactProvenance: Buffer.from(JSON.stringify(provenanceFor(unsignedBytes))),
+      },
+      error: /draft provenance differs from Actions/,
+    },
     prerelease: { options: { release: { prerelease: true } }, error: /is not the draft/ },
     "wrong tag": {
       options: { release: { tag_name: "android-v0.1.43" } },
@@ -84,8 +101,11 @@ test("every refusal before upload leaves the release untouched", async (t) => {
       error: /is not the draft/,
     },
     "unsigned APK differs from provenance": {
-      options: { provenance: provenanceFor(Buffer.from("other bytes")) },
-      error: /differs from its CI provenance/,
+      options: {
+        provenance: provenanceFor(Buffer.from("other bytes")),
+        artifactApk: Buffer.from("other bytes"),
+      },
+      error: /draft APK differs from Actions/,
     },
     "unsigned APK already signed": {
       options: { tools: { unsignedVerifies: true } },
@@ -246,4 +266,3 @@ test("release-sign needs a valid Android tag and a numeric release id", async (t
     await assert.rejects(releaseSign(s.deps, args), /needs --tag/);
   assert.equal(s.lock.acquired, 0);
 });
-

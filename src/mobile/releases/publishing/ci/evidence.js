@@ -4,8 +4,8 @@
 // src/mobile/releases/publishing/ci-evidence.js (job/attempt rules unchanged), reshaped
 // for recovery: the android-draft job of the source attempt need not have succeeded.
 import { CONTRACT, isSafeId } from "../../release-contract.js";
-import { WORKFLOW } from "../policy.js";
-import { unsignedArtifactName } from "../ci-reference.js";
+import { WORKFLOW, validateProvenance } from "../policy.js";
+import { unsignedArtifactName, validateCiReference } from "../ci-reference.js";
 
 const refuse = (why) => {
   throw Object.assign(new Error(`Android CI evidence refused: ${why}`), { code: "ANDROID_EVIDENCE" });
@@ -61,6 +61,65 @@ export function execution(jobs, name, attempt, run) {
   if (!job || job.status !== "completed" || job.conclusion !== "success")
     refuse(`job ${name} did not succeed in attempt ${attempt}`);
   return job;
+}
+
+/**
+ * Authenticates the run, jobs and exact artifact claimed by an attended draft.
+ * The draft job may be from a later rerun than the build it published.
+ */
+export async function verifyCiEvidence(api, provenance, reference, { now = Date.now() } = {}) {
+  const p = validateProvenance(provenance);
+  const c = validateCiReference(reference, p);
+  if (api.repository !== CONTRACT.repository) refuse("wrong repository client");
+  const run = await api.request("GET", `/actions/runs/${c.runId}`);
+  if (
+    run?.id !== c.runId ||
+    run.repository?.full_name !== CONTRACT.repository ||
+    run.head_repository?.full_name !== CONTRACT.repository ||
+    run.path?.split("@")[0] !== WORKFLOW ||
+    run.event !== "workflow_dispatch" ||
+    run.head_branch !== CONTRACT.branch ||
+    run.head_sha !== p.commit ||
+    run.run_number !== p.runNumber ||
+    !isSafeId(run.run_attempt) ||
+    run.run_attempt < c.draftRunAttempt
+  )
+    refuse(`run ${c.runId} does not match the draft provenance`);
+  const workflow = await api.request("GET", "/actions/workflows/release.yml");
+  if (!isSafeId(workflow?.id) || workflow.id !== run.workflow_id || workflow.path !== WORKFLOW)
+    refuse("workflow identity mismatch");
+  const jobs = await jobsFor(api, c.runId);
+  const verify = execution(jobs, "android-verify", c.draftRunAttempt, run);
+  const build = execution(jobs, "android-build", c.draftRunAttempt, run);
+  const draft = execution(jobs, "android-draft", c.draftRunAttempt, run);
+  if (
+    build.run_attempt !== c.runAttempt ||
+    draft.run_attempt !== c.draftRunAttempt ||
+    time(verify.completed_at) > time(build.started_at) ||
+    time(build.completed_at) > time(draft.started_at)
+  )
+    refuse("draft and build job executions are inconsistent");
+  const artifact = await api.request("GET", `/actions/artifacts/${c.artifactId}`);
+  if (
+    artifact?.id !== c.artifactId ||
+    artifact.name !== c.artifactName ||
+    artifact.expired !== false ||
+    artifact.digest !== `sha256:${c.artifactSha256}` ||
+    artifact.workflow_run?.id !== c.runId ||
+    artifact.workflow_run?.head_sha !== p.commit ||
+    artifact.workflow_run?.head_branch !== CONTRACT.branch ||
+    !isSafeId(artifact.size_in_bytes) ||
+    artifact.size_in_bytes > CONTRACT.limits.maxApkBytes + 1024 * 1024 ||
+    !(time(artifact.expires_at) > now) ||
+    !(time(artifact.created_at) >= time(build.started_at)) ||
+    !(time(artifact.created_at) <= time(build.completed_at) + 5000)
+  )
+    refuse(`${c.artifactName} is expired, foreign or not from that build`);
+  return {
+    artifactId: artifact.id,
+    artifactSha256: c.artifactSha256,
+    artifactSize: artifact.size_in_bytes,
+  };
 }
 
 /**

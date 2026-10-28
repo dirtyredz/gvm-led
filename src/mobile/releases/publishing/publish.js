@@ -2,8 +2,8 @@
 // This module only sequences the steps (publishing/steps/):
 //
 //   1. verify-source: clean checkout at the tag's commit; approved contract and pin
-//   2-3. verify-source: draft state, CI provenance, unsigned hash; versionCode above
-//      every published Android release (errors are never "no history")
+//   2-3. verify-source: draft state, authenticated Actions run and exact artifact;
+//      artifact/draft APK + provenance hashes; versionCode above published history
 //   4-5. sign: signing material through the signing source (keystore pin checked
 //      first), zipalign + apksigner (env: passwords), full signed inspection, manifest
 //      from the final signed bytes

@@ -51,7 +51,8 @@ Logs: `.tmp\owner-runs\`. Agents run `-DryRun` only.
 3. **Sign and publish** — `publish-release.ps1 [-Tag android-v0.1.<n>] [-ReleaseId <id>]` (one
    Windows Hello / 1Password approval, at the signing step only). Creates a detached worktree at the
    tag's commit under `C:\Users\dirty\projects\.worktrees\gvm-led\sign-<tag>`, runs `npm ci` there and
-   `secrets.js release-sign`, which verifies draft, tag commit, provenance, unsigned digest and
+   `secrets.js release-sign`, which requires the CI reference, authenticates its Actions run and
+   exact artifact ID, and verifies the artifact's APK and provenance hashes against the draft plus
    versionCode monotonicity before reading any secret; then zipalign + apksigner (password via
    `env:`), single pinned signer and identity checks, upload of APK and manifest, re-download and hash
    comparison, deletion of only the unsigned asset, publish last as GitHub's latest release.
@@ -71,6 +72,9 @@ install. The debug app is a separate package and can stay installed alongside.
   the same run may replace that run's own unsigned draft.
 - **Partial publication:** rerun `publish-release.ps1` with the same tag; it verifies already
   uploaded signed assets instead of re-signing. Conflicting or unknown assets are never clobbered.
+- **Actions artifact expired or missing:** the signer refuses before opening 1Password because it
+  can no longer prove the draft bytes came from CI. Run a new normal Release workflow; do not
+  recreate or replace the CI-reference asset by hand.
 - **Draft lost or never created, build artifact still retained (7 days):**
   `gh workflow run release-resume.yml --ref main -f source-run-id=<run> -f attempt=<n>`. It verifies
   the original run (finished `workflow_dispatch` of `release.yml` on `main`, `android-verify` and

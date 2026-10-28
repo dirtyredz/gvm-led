@@ -18,7 +18,7 @@ import { inspectSigned, signApk } from "../../signing/sign.js";
 import { fail } from "../draft-state.js";
 
 /** Returns {manifest, signedFile, resumed}; the signed APK is local at `signedFile`. */
-export async function signRelease(tx, { state, provenance, expected }) {
+export async function signRelease(tx, { state, provenance, expected, unsignedFile: verifiedUnsigned }) {
   const { api, material, names, pin } = tx;
   const signedFile = material.file(names.signed);
   if (state.signed) {
@@ -43,10 +43,12 @@ export async function signRelease(tx, { state, provenance, expected }) {
   }
 
   if (!state.unsigned) throw fail("draft has neither the unsigned nor a signed APK");
-  const unsignedFile = material.file(names.unsigned);
-  const got = await api.downloadAsset(state.unsigned.id, unsignedFile);
-  if (got.size !== provenance.unsignedApk.size || got.sha256 !== provenance.unsignedApk.sha256)
-    throw fail("the unsigned APK differs from its CI provenance");
+  const unsignedFile = verifiedUnsigned ?? material.file(names.unsigned);
+  if (!verifiedUnsigned) {
+    const got = await api.downloadAsset(state.unsigned.id, unsignedFile);
+    if (got.size !== provenance.unsignedApk.size || got.sha256 !== provenance.unsignedApk.sha256)
+      throw fail("the unsigned APK differs from its CI provenance");
+  }
   const badging = requireUnsignedBuild(
     parseBadging(
       (await mustRun(badgingCommand(tx.tools, unsignedFile), "aapt2 badging", tx.run)).stdout,

@@ -13,6 +13,7 @@
     "secrets": "node scripts/mobile/secrets.js"
   },
   "devDependencies": {
-    "@1password/sdk": "0.5.0"
+    "@1password/sdk": "0.5.0",
+    "yauzl": "3.4.0"
   }
 }

@@ -93,6 +93,8 @@ test("downloads stream binary to a new file with a hash, and respect the byte bo
   assert.deepEqual(await readFile(file), bytes);
   assert.ok(spawned[0].args.includes("Accept: application/octet-stream"));
   assert.equal(spawned[0].args.at(-1), "repos/o/r/releases/assets/11");
+  await api.downloadArtifact(22, path.join(dir, "artifact.zip"), 100);
+  assert.equal(spawned[1].args.at(-1), "repos/o/r/actions/artifacts/22/zip");
 
   const big = path.join(dir, "big.bin");
   await assert.rejects(ghSessionApi({ spawnChild }).downloadAsset(11, big, 3), /exceeds/);

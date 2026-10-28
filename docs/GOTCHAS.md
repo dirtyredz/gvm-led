@@ -44,7 +44,8 @@
   case-insensitive, so it overwrites `owner-run.ps1`'s `$script:Secrets` redaction list and the log
   shows `[REDACTED]` for whatever you stored. Use specific names (`$secretsJs`).
 - **Release tooling is Node 22 ESM with JSON import attributes** (`with { type: "json" }`); older
-  Node fails at import. CI pins 22.20.0; `npm ci` installs only `@1password/sdk` (dev).
+  Node fails at import. CI pins 22.20.0; `npm ci` installs `@1password/sdk` plus `yauzl` for bounded
+  inspection of the exact Actions artifact (both dev dependencies).
 
 - **Windows connect fails with "device not found"** -> bleak/WinRT needs the device seen in a scan first -> scan, then connect (the scripts do).
 - **Connect refused or characteristic missing** -> a light accepts one connection; the phone app (or a previous connection) holds it -> close the GVM app; connect to lights sequentially; retry once after a disconnect ("Characteristic not found").
