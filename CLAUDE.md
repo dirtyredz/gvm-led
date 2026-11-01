@@ -10,7 +10,7 @@ CRC16/XMODEM framed `4C 54` packets). Goal: avoid the official app's colour-mode
 - Fast gate (Java 21, `ANDROID_HOME` pointing to an installed SDK 36 / build-tools 35.0.0):
   `src\mobile\android\gradlew.bat -p src\mobile\android --offline --no-daemon --dependency-verification strict testDebugUnitTest assembleDebug lintDebug`.
   Afterwards: `src\mobile\android\gradlew.bat -p src\mobile\android --stop`.
-  The wrapper distribution and dependencies must already be cached for offline builds.
+  The wrapper distribution and dependencies must already be cached for offline builds; on a fresh machine the first run also needs network for Robolectric's `android-all` jar (see GOTCHAS).
 - Release tooling (Node 22, `src/mobile/releases/`, `scripts/mobile/`): `npm ci` then `npm test` (fakes only).
   Releases: CI unsigned draft (`release.yml`, dispatch on `main`), local signing with the GVM key in
   1Password vault `GVM-LED`, published on GitHub Releases; the owner installs from there on the phone (no adb) — runbook `docs/mobile/android-distribution.md`. Agents run
