@@ -122,3 +122,10 @@ dependencies {
     debugImplementation(libs.compose.ui.test.manifest)
     testImplementation(libs.kotlinx.coroutines.test)
 }
+
+// Compose UI tests need ui-test-manifest's ComponentActivity, which is debugImplementation only so the
+// release APK ships no test components. They run in testDebugUnitTest (the CI fast gate); the release
+// variant compiles the same sources, so skip them in testReleaseUnitTest rather than shipping the manifest.
+tasks.withType<Test>().configureEach {
+    if (name == "testReleaseUnitTest") exclude("**/ColorWheelPickerTest*")
+}
