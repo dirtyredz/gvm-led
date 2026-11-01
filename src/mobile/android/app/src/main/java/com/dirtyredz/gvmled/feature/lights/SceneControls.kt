@@ -32,5 +32,5 @@ internal fun SceneControls(values: TargetValues, apply: (LightEdit) -> Unit) {
         })
     }
     if (fields.cct) CctSlider(values, apply)
-    if (fields.colour) HsiSliders(values, apply)
+    if (fields.colour) HueSaturationControls(values, apply)
 }

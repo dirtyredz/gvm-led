@@ -51,7 +51,7 @@ internal fun LightControls(values: TargetValues, outcome: String?, message: Stri
             SharedSlider("Brightness", values.brightness, 0..100, { "$it %" }, onCommit = { apply(LightEdit(brightness = it)) })
             when (values.mode.valueOrNull) {
                 LightMode.Cct -> CctSlider(values, apply)
-                LightMode.Hsi -> HsiSliders(values, apply)
+                LightMode.Hsi -> HueSaturationControls(values, apply)
                 LightMode.Scene -> SceneControls(values, apply)
                 null -> Text("The lights are in different modes. Choose a mode to set them all.", style = MaterialTheme.typography.bodyMedium)
             }
@@ -94,7 +94,7 @@ internal fun CctSlider(values: TargetValues, apply: (LightEdit) -> Unit) {
 }
 
 @Composable
-internal fun HsiSliders(values: TargetValues, apply: (LightEdit) -> Unit) {
+internal fun HueSaturationControls(values: TargetValues, apply: (LightEdit) -> Unit) {
     ColorWheelPicker(values.hue.normalize(Field.Hue), values.saturation) { hue, saturation ->
         apply(LightEdit(hue = hue, saturation = saturation))
     }
