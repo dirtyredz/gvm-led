@@ -22,7 +22,8 @@
   confirmation only from a fresh full report, 3 rounds then Not confirmed and reconnect (revised
   slice 4, the colour-bug fix) — implemented and unit-tested; on-light acceptance pending
 - Individual and named-group controls: power, mode, brightness, CCT (members' range intersection),
-  hue (5-degree steps), saturation, scenes 1-20 with applicable parameters, Mixed/Unknown values and
+  colour wheel picker (angle = hue in 5-degree steps, distance = saturation; preview swatch, readout, 8 preset
+  swatches; commits once on drag end or tap), scenes 1-20 with applicable parameters, Mixed/Unknown values and
   per-member status (revised slice 5) — implemented and unit-tested; on-light acceptance pending.
   Owner steps: [controls-acceptance.md](mobile/controls-acceptance.md)
 - Android release pipeline: CI unsigned APK on a draft release, retained-artifact draft recovery,

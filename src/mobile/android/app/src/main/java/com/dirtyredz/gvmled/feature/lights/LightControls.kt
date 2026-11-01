@@ -95,8 +95,9 @@ internal fun CctSlider(values: TargetValues, apply: (LightEdit) -> Unit) {
 
 @Composable
 internal fun HsiSliders(values: TargetValues, apply: (LightEdit) -> Unit) {
-    SharedSlider("Hue", values.hue.normalize(Field.Hue), Field.Hue.limits, { "${it * 5}°" }, onCommit = { apply(LightEdit(hue = it)) })
-    SharedSlider("Saturation", values.saturation, 0..100, { "$it %" }, onCommit = { apply(LightEdit(saturation = it)) })
+    ColorWheelPicker(values.hue.normalize(Field.Hue), values.saturation) { hue, saturation ->
+        apply(LightEdit(hue = hue, saturation = saturation))
+    }
 }
 
 private fun Shared<Int>.normalize(field: Field): Shared<Int> = when (this) {
