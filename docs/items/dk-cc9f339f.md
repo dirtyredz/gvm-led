@@ -10,7 +10,7 @@ rank: zzzzzzzn
 parent:
 fixes: []
 blocked_by: []
-relates: [dk-1eff97a2]
+relates: [dk-1eff97a2, dk-9ebfa71a]
 ---
 # Colour wheel: split Wheel drawing from gesture handling; route rimInsetPx through updated state
 
