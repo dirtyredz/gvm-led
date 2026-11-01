@@ -11,13 +11,13 @@ import kotlin.math.sin
 internal data class HueSat(val hue: Int, val saturation: Int)
 
 /**
- * A selection the owner made, remembered with the confirmed value ([base]) it was made against. The
- * holder state must outlive confirmed-value changes (a pointerInput block captures it once), so staleness
+ * A selection the owner made, remembered with the input (wanted) value ([base]) it was made against. The
+ * holder state must outlive input-value changes (a pointerInput block captures it once), so staleness
  * is decided here instead of by re-keying the state.
  */
 internal data class Pick(val value: HueSat, val base: HueSat?)
 
-/** What the wheel shows: the owner's pick while the confirmed value is still the one it was made against, else the confirmed value. */
+/** What the wheel shows: the owner's pick while the input (wanted) value is still the one it was made against, else the input value. */
 internal fun displayedSelection(known: HueSat?, pick: Pick?): HueSat? =
     if (pick != null && pick.base == known) pick.value else known
 

@@ -95,5 +95,12 @@
   from the first composition, so anything it writes or calls must be un-keyed state or read through
   `rememberUpdatedState`. Re-keying the state it writes (`remember(hue, saturation)`) orphans it: that
   froze the colour-wheel drag after the first commit (fixed in 0.1.6).
+- **Compose: local function references (`::preview`) defeat `rememberUpdatedState`.** They compare equal across
+  recompositions even when their captures differ, so the state keeps the first one. The wheel still hid every
+  drag after the first in 0.1.6 for that reason; pass lambdas (`{ preview(it) }`). `ColorWheelPickerTest` guards it.
+- **Compose UI tests run under Robolectric** (`testOptions.unitTests.isIncludeAndroidResources`, SDK 34, plain
+  `Application`, paused looper). Robolectric downloads its `android-all` jar from Maven Central at first run (not
+  covered by Gradle verification, needs network once; cached under `~/.m2`). Read held UI state before `up()`:
+  release publishes the new input and masks the bug.
 
 _Living doc — refresh with /project-docs when it drifts._

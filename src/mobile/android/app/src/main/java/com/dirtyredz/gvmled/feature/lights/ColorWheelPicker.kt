@@ -78,7 +78,10 @@ internal fun ColorWheelPicker(hue: Shared<Int>, saturation: Shared<Int>, onCommi
             Text(readout, style = MaterialTheme.typography.bodyMedium)
         }
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-            Wheel(shown, onPreview = ::preview, onCommit = ::commit)
+            // Must stay lambdas, not ::preview / ::commit: local function references compare equal across
+            // recompositions even when their captures differ, so Wheel's rememberUpdatedState would keep the
+            // first ones and every later drag would preview against a stale base (hidden until release).
+            Wheel(shown, onPreview = { preview(it) }, onCommit = { commit(it) })
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             presets.forEach { (name, h) ->

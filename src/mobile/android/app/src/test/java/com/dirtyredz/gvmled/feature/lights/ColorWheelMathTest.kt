@@ -46,11 +46,11 @@ class ColorWheelMathTest {
         assertTrue(x == 0f && y == 0f)
     }
 
-    @Test fun pickShownUntilConfirmedValueChanges() {
+    @Test fun pickShownUntilInputValueChanges() {
         val a = HueSat(10, 50)
         val b = HueSat(20, 60)
         assertEquals(b, displayedSelection(a, Pick(b, a)))
-        // the light confirmed a new value: a stale pick must not mask it
+        // the input (wanted) value changed: a stale pick must not mask it
         assertEquals(b, displayedSelection(b, Pick(HueSat(30, 70), a)))
         assertEquals(b, displayedSelection(null, Pick(b, null)))
         assertEquals(a, displayedSelection(a, null))
