@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,9 +59,12 @@ private fun colourOf(selection: HueSat): Color =
 @Composable
 internal fun ColorWheelPicker(hue: Shared<Int>, saturation: Shared<Int>, onCommit: (hue: Int, saturation: Int) -> Unit) {
     val known = if (hue is Shared.Same && saturation is Shared.Same) HueSat(hue.value, saturation.value) else null
-    var picked by remember(hue, saturation) { mutableStateOf<HueSat?>(null) }
-    val shown = picked ?: known
-    fun commit(selection: HueSat) { picked = selection; onCommit(selection.hue, selection.saturation) }
+    // Not keyed on hue/saturation: the Wheel's pointerInput blocks capture this state once, so re-keying
+    // it when the light confirms a value left them writing to an orphaned state (drag stopped showing).
+    var pick by remember { mutableStateOf<Pick?>(null) }
+    val shown = displayedSelection(known, pick)
+    fun preview(selection: HueSat) { pick = Pick(selection, known) }
+    fun commit(selection: HueSat) { preview(selection); onCommit(selection.hue, selection.saturation) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -74,7 +78,7 @@ internal fun ColorWheelPicker(hue: Shared<Int>, saturation: Shared<Int>, onCommi
             Text(readout, style = MaterialTheme.typography.bodyMedium)
         }
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-            Wheel(shown, onPreview = { picked = it }, onCommit = ::commit)
+            Wheel(shown, onPreview = ::preview, onCommit = ::commit)
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             presets.forEach { (name, h) ->
@@ -98,17 +102,19 @@ private fun Wheel(shown: HueSat?, onPreview: (HueSat) -> Unit, onCommit: (HueSat
         val centre = size.width / 2f
         return ColorWheelMath.fromOffset(p.x - centre, p.y - centre, ColorWheelMath.wheelRadius(size.width.toFloat(), rimInsetPx))
     }
+    val currentPreview by rememberUpdatedState(onPreview)
+    val currentCommit by rememberUpdatedState(onCommit)
     val rim = MaterialTheme.colorScheme.outline
     var last by remember { mutableStateOf<HueSat?>(null) }
     Canvas(
         Modifier.widthIn(max = WHEEL_MAX_SIZE).fillMaxWidth().aspectRatio(1f)
             .semantics { contentDescription = "Colour wheel: angle sets hue, distance from centre sets saturation" }
-            .pointerInput(Unit) { size = this.size; detectTapGestures { onCommit(at(it)) } }
+            .pointerInput(Unit) { size = this.size; detectTapGestures { currentCommit(at(it)) } }
             .pointerInput(Unit) {
                 detectDragGestures(
-                    onDragStart = { last = at(it).also(onPreview) },
-                    onDrag = { change, _ -> change.consume(); last = at(change.position).also(onPreview) },
-                    onDragEnd = { last?.let(onCommit) },
+                    onDragStart = { last = at(it).also(currentPreview) },
+                    onDrag = { change, _ -> change.consume(); last = at(change.position).also(currentPreview) },
+                    onDragEnd = { last?.let(currentCommit) },
                 )
             },
     ) {

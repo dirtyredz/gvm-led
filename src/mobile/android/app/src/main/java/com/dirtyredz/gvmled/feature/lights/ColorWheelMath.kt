@@ -10,6 +10,17 @@ import kotlin.math.sin
 /** A wheel selection in protocol units: hue in 5-degree steps (0..71), saturation 0..100. */
 internal data class HueSat(val hue: Int, val saturation: Int)
 
+/**
+ * A selection the owner made, remembered with the confirmed value ([base]) it was made against. The
+ * holder state must outlive confirmed-value changes (a pointerInput block captures it once), so staleness
+ * is decided here instead of by re-keying the state.
+ */
+internal data class Pick(val value: HueSat, val base: HueSat?)
+
+/** What the wheel shows: the owner's pick while the confirmed value is still the one it was made against, else the confirmed value. */
+internal fun displayedSelection(known: HueSat?, pick: Pick?): HueSat? =
+    if (pick != null && pick.base == known) pick.value else known
+
 /** Pure geometry for the hue/saturation wheel; angle 0 is 3 o'clock, increasing clockwise (screen y down). */
 internal object ColorWheelMath {
     const val HUE_STEPS = 72

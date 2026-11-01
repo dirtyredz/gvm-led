@@ -45,4 +45,14 @@ class ColorWheelMathTest {
         val (x, y) = ColorWheelMath.toOffset(HueSat(0, 0), 200f)
         assertTrue(x == 0f && y == 0f)
     }
+
+    @Test fun pickShownUntilConfirmedValueChanges() {
+        val a = HueSat(10, 50)
+        val b = HueSat(20, 60)
+        assertEquals(b, displayedSelection(a, Pick(b, a)))
+        // the light confirmed a new value: a stale pick must not mask it
+        assertEquals(b, displayedSelection(b, Pick(HueSat(30, 70), a)))
+        assertEquals(b, displayedSelection(null, Pick(b, null)))
+        assertEquals(a, displayedSelection(a, null))
+    }
 }
