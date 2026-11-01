@@ -1,4 +1,4 @@
-// Shared streaming asset identity for desktop and phone release preparation.
+// Shared streaming asset identity for phone release preparation.
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";

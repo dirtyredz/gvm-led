@@ -29,9 +29,19 @@ src/
 ├── mobile/android/          # independent pinned Gradle build
 │   ├── app/src/
 │   │   ├── main/            # Android application and resources
+│   │   │   └── java/com/dirtyredz/gvmled/   # packages under gvmled/:
+│   │   │       ├── light/{ble,connection,control,protocol}
+│   │   │       ├── data/{json,local,model,remote,repository}
+│   │   │       ├── feature/{lights,settings}   # settings/{lights,groups}
+│   │   │       ├── update/{android}
+│   │   │       └── ui/{components,navigation,theme}
 │   │   └── test/            # local JUnit tests (mirrored packages, fake BLE)
 │   └── gradle/              # wrapper and dependency verification
 ├── mobile/releases/         # Node release tooling: contract, CI draft, local signing (1Password)
+│   ├── process/             # bounded, redacting child execution
+│   ├── publishing/{ci,github,steps}/
+│   ├── signing/             # keystore identity, key generation, APK signing
+│   └── secrets/             # 1Password plan and vault adapter
 └── research/ble/            # Python reference + visible proof run (bleak)
 scripts/
 ├── mobile/      # thin Node CLIs: release.js (CI), secrets.js (local key/signing)
@@ -56,7 +66,7 @@ test/mobile/releases/  # node --test suites for the release tooling (fakes only)
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/update/` — Android-free updater: bundled contract, manifest validation, version mapping, release policy, ready-file handling, state and the `UpdateController` state machine with its ports.
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/update/android/` — platform adapters: contract asset loader, installed identity, APK inspection, signer digests by API level, installer/settings intents.
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/light/protocol/` — Android-free CRC, shared frame format, packet encoding (`SetCommand`, `LegacyCommand`), typed message parsing, bounded stream decoding and the rgb33 `SceneCatalog`.
-- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/feature/lights/` — Lights screen, target chips (`TargetSelector`), state mapping (`LightTargets`, `LightsUiState` with apply wording), controls (`LightControls`, `SceneControls`; edits built in `ControlEdits`), card rendering and the ViewModel.
+- `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/feature/lights/` — Lights screen, target chips (`TargetSelector`), state mapping (`LightTargets`, `LightsUiState` with apply wording), controls (`LightControls`, `SceneControls`; hue/saturation via `ColorWheelPicker` and its pure `ColorWheelMath`; edits built in `ControlEdits`), card rendering and the ViewModel.
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/feature/settings/` — Settings screen, app identity and update card (`SettingsUiState`); `lights/` light management (find, add, rename); `groups/` group list and editor.
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/ui/navigation/` — `GvmApp`: destinations, the saved back stack and ViewModel factories (no navigation library).
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/ui/components/` — shared composables: radio banner/actions, screen frame, name dialog.
@@ -81,7 +91,7 @@ test/mobile/releases/  # node --test suites for the release tooling (fakes only)
 
 - **Research** — `docs/research/protocol.md`: source of truth for the protocol.
 - **Android app** — `src/mobile/android/`: an Android-free codec (bounded stream decoder, typed replies), Android-free connection logic behind a transport seam, Android-free control (wanted state, planning, confirmation), thin Android BLE adapters, a Compose Lights screen with individual and group controls, Settings with GitHub updates, light management and named groups.
-- **Owner-run plumbing** — `scripts/owner/`: logging/dry-run wrapper plus an example step and test.
+- **Owner-run plumbing** — `scripts/owner/`: logging/dry-run wrapper plus an example step and test, and the release steps (`new-signing-key.ps1`, `publish-release.ps1`, `install-release.ps1`, shared helpers in `release-tools.ps1`).
 - **BLE reference** — `src/research/ble/` contains the tracked codec, client, camera observer, proof runner and tests.
 
 ## Where to find things
@@ -90,6 +100,14 @@ Protocol framing, commands, lights' addresses: `docs/research/protocol.md`. Work
 
 ## Structural debt
 
-The useful BLE research code is tracked under `src/research/ble/`; `.tmp/` holds only disposable inputs and run output.
+Last full review: 2026-10-31
+
+Baseline review findings are filed as Docket items (`dk list`), not fixed here:
+
+- **Layering and contracts.** `data/local` and `data/repository` form a cycle (dk-5487c6a4, P1; store contracts dk-c73bf266); `BluetoothAddress` couples `light/` to `data/` (dk-af5a99a3); `data/remote` serves only the updater (dk-7c5a45f3); `ReadyDownload` should leave `UpdateController` (dk-b43f9779).
+- **Units.** Wire units and hue wrapping are converted in several UI places (dk-78f785bd, P1).
+- **Presentation.** `SettingsUiState` and `LightsUiState` mix state with presentation (dk-c87b2760, dk-3c43178d).
+- **Release tooling.** Duplicate sha256 helpers (dk-b531cbc2, dk-edc157f5); tooling breadth (dk-69b0919e); fragment files (dk-dc320540).
+- **Research code.** `src/research/ble/` items such as dk-5df95602 (split `live_test.py`). The code is tracked; `.tmp/` holds only disposable inputs and run output.
 
 _Living doc — refresh with /project-docs when it drifts._

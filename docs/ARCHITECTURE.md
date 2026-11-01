@@ -98,7 +98,8 @@ Ports and adapters: `light/connection/` is Android-free and depends only on two 
   reason when any member lacks a range or they do not overlap). Lights shows power (explicit On/Off),
   mode, brightness, mode-specific controls only when the mode is common, per-light apply status on
   each card and a group outcome ("2 of 3 confirmed; Fill waiting for connection"). Sliders apply on
-  release (one revision per drag).
+  release (one revision per drag); hue/saturation is a colour wheel that commits once, on drag end, tap
+  or preset tap.
 - **Updates (owner-initiated only).** `UpdateController` (process-scoped) asks
   `GitHubReleaseClient` for a typed `releases/latest` listing (the remote adapter owns JSON decoding),
   then applies `ReleasePolicy` (published `android-v` tag,

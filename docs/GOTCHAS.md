@@ -90,5 +90,6 @@
   Scene 20's hue/saturation confirmation is static evidence only until hardware acceptance.
 - **Controls need a baseline per light**: every member must have connected once (its first report
   is adopted as intent) before group edits work; edits never invent defaults for a missing member.
+- **Offline fast gate fails on a cold cache**: `--offline` stops with "No cached version of androidx.tracing:tracing:1.2.0 available for offline mode" (the cache holds 1.3.0). Run the same gradle command once without `--offline`, keeping `--dependency-verification strict`, to fill the cache; later runs can go offline again.
 
 _Living doc — refresh with /project-docs when it drifts._

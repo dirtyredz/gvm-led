@@ -2,8 +2,8 @@
 id: dk-ccdb45a0
 type: task
 created: 2026-10-28
-status: todo
-since: 2026-10-28
+status: done
+since: 2026-10-31
 area: android
 priority: P3
 rank: zw

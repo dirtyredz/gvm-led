@@ -32,7 +32,7 @@ data class LightsUiState(
     val settingsProblem: String? = null,
 )
 
-/** Display-ready values for one light. Wire units are converted here, nowhere else in the UI. */
+/** Display-ready values for one light. Mapped from observed wire units here, but controls also convert wire units (consolidation: dk-78f785bd). */
 data class LightCardModel(
     val address: String,
     val addressSuffix: String,
