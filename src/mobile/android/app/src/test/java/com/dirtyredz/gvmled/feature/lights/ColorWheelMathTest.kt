@@ -21,6 +21,14 @@ class ColorWheelMathTest {
         assertEquals(0, ColorWheelMath.fromOffset(10f, 10f, 0f).saturation)
     }
 
+    @Test fun wheelRadiusLeavesThumbRoomInsideBounds() {
+        assertEquals(104f, ColorWheelMath.wheelRadius(240f, 16f), 0.001f)
+        assertEquals(0f, ColorWheelMath.wheelRadius(20f, 16f), 0.001f)
+        // rim selection stays inside the bounds including the thumb inset
+        val (dx, _) = ColorWheelMath.toOffset(HueSat(0, 100), ColorWheelMath.wheelRadius(240f, 16f))
+        assertTrue(120f + dx + 16f <= 240f + 0.001f)
+    }
+
     @Test fun hueSnapsToFiveDegreesAndWraps() {
         assertEquals(1, ColorWheelMath.snapHue(3.0))
         assertEquals(0, ColorWheelMath.snapHue(2.4))

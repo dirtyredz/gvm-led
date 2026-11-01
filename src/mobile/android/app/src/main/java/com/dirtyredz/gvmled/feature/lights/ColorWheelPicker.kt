@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +35,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.dirtyredz.gvmled.light.control.Shared
+
+/** Largest wheel diameter (layout bounds); narrower screens shrink it. */
+private val WHEEL_MAX_SIZE = 240.dp
+
+/** Room kept inside the bounds around the rim so the thumb (14 dp radius incl. stroke) never draws outside them. */
+private val THUMB_INSET = 16.dp
 
 private val presets = listOf(
     "Red" to 0, "Orange" to 6, "Yellow" to 12, "Green" to 24,
@@ -67,7 +73,9 @@ internal fun ColorWheelPicker(hue: Shared<Int>, saturation: Shared<Int>, onCommi
                 ?: "Hue: ${sharedText(hue) { "" }}  Saturation: ${sharedText(saturation) { "" }}"
             Text(readout, style = MaterialTheme.typography.bodyMedium)
         }
-        Wheel(shown, onPreview = { picked = it }, onCommit = ::commit)
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+            Wheel(shown, onPreview = { picked = it }, onCommit = ::commit)
+        }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             presets.forEach { (name, h) ->
                 val preset = HueSat(h, 100)
@@ -85,14 +93,15 @@ internal fun ColorWheelPicker(hue: Shared<Int>, saturation: Shared<Int>, onCommi
 @Composable
 private fun Wheel(shown: HueSat?, onPreview: (HueSat) -> Unit, onCommit: (HueSat) -> Unit) {
     var size by remember { mutableStateOf(IntSize.Zero) }
+    val rimInsetPx = with(androidx.compose.ui.platform.LocalDensity.current) { THUMB_INSET.toPx() }
     fun at(p: Offset): HueSat {
-        val radius = size.width / 2f
-        return ColorWheelMath.fromOffset(p.x - radius, p.y - radius, radius)
+        val centre = size.width / 2f
+        return ColorWheelMath.fromOffset(p.x - centre, p.y - centre, ColorWheelMath.wheelRadius(size.width.toFloat(), rimInsetPx))
     }
     val rim = MaterialTheme.colorScheme.outline
     var last by remember { mutableStateOf<HueSat?>(null) }
     Canvas(
-        Modifier.fillMaxWidth().heightIn(max = 280.dp).aspectRatio(1f)
+        Modifier.widthIn(max = WHEEL_MAX_SIZE).fillMaxWidth().aspectRatio(1f)
             .semantics { contentDescription = "Colour wheel: angle sets hue, distance from centre sets saturation" }
             .pointerInput(Unit) { size = this.size; detectTapGestures { onCommit(at(it)) } }
             .pointerInput(Unit) {
@@ -104,8 +113,8 @@ private fun Wheel(shown: HueSat?, onPreview: (HueSat) -> Unit, onCommit: (HueSat
             },
     ) {
         size = IntSize(this.size.width.toInt(), this.size.height.toInt())
-        val radius = this.size.width / 2f
-        val centre = Offset(radius, radius)
+        val radius = ColorWheelMath.wheelRadius(this.size.width, rimInsetPx)
+        val centre = Offset(this.size.width / 2f, this.size.width / 2f)
         val sweep = (0..6).map { Color.hsv(it * 60f, 1f, 1f) }
         drawCircle(Brush.sweepGradient(sweep, centre), radius, centre)
         drawCircle(Brush.radialGradient(listOf(Color.White, Color.Transparent), centre, radius), radius, centre)

@@ -22,6 +22,9 @@ internal object ColorWheelMath {
         return HueSat(snapHue(degrees), saturation)
     }
 
+    /** Drawn/hit-test wheel radius for a square of [side] px, leaving [inset] px inside the bounds for the thumb at the rim. */
+    fun wheelRadius(side: Float, inset: Float): Float = (side / 2f - inset).coerceAtLeast(0f)
+
     /** Snaps degrees (any real, negative allowed) to the nearest protocol hue step, wrapping 360 to 0. */
     fun snapHue(degrees: Double): Int {
         val steps = (degrees / DEGREES_PER_STEP).roundToInt()
