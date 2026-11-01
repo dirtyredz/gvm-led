@@ -35,7 +35,7 @@ src/
 │   │   │       ├── feature/{lights,settings}   # settings/{lights,groups}
 │   │   │       ├── update/{android}
 │   │   │       └── ui/{components,navigation,theme}
-│   │   └── test/            # local JUnit tests (mirrored packages, fake BLE)
+│   │   └── test/            # local JUnit + Robolectric Compose UI tests (mirrored packages, fake BLE)
 │   └── gradle/              # wrapper and dependency verification
 ├── mobile/releases/         # Node release tooling: contract, CI draft, local signing (1Password)
 │   ├── process/             # bounded, redacting child execution
@@ -72,7 +72,7 @@ test/mobile/releases/  # node --test suites for the release tooling (fakes only)
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/ui/components/` — shared composables: radio banner/actions, screen frame, name dialog.
 - `src/mobile/android/app/src/main/java/com/dirtyredz/gvmled/ui/theme/` — Material 3 root surface.
 - `src/mobile/android/app/src/main/res/` — application strings, theme, launcher, backup policy and the FileProvider path (`xml/update_paths.xml`).
-- `src/mobile/android/app/src/test/java/com/dirtyredz/gvmled/` — JUnit tests mirroring the production packages (`light/{protocol,ble,control,connection}/`, the last with a `SimulatedLight` and shared vectors plus scriptable transport/factory and scanner fakes, `data/{json,local,remote,repository}/`, `update/` and `update/android/`, `feature/{lights,settings}/`).
+- `src/mobile/android/app/src/test/java/com/dirtyredz/gvmled/` — JUnit tests (plus Robolectric Compose UI tests such as `feature/lights/ColorWheelPickerTest`, debug variant only) mirroring the production packages (`light/{protocol,ble,control,connection}/`, the last with a `SimulatedLight` and shared vectors plus scriptable transport/factory and scanner fakes, `data/{json,local,remote,repository}/`, `update/` and `update/android/`, `feature/{lights,settings}/`).
 - `.github/workflows/` — `ci.yml` (strict Android unit, debug assembly and lint gate plus the release-tooling Node tests; no publication), `release.yml` (dispatch on main: version, verify, unsigned build, draft), `release-resume.yml` (restore a draft from a retained build artifact; never rebuilds or signs).
 - `src/mobile/releases/` — release contract and identity (`release-contract.{json,js}`, `signing-certificate.json` public pin), `version.js` (allocation, CI identity), `manifest.js` (phone-release.json), `prepare.js` (CI unsigned staging).
 - `src/mobile/releases/process/` — bounded, redacting child execution for release tools.
