@@ -91,5 +91,9 @@
 - **Controls need a baseline per light**: every member must have connected once (its first report
   is adopted as intent) before group edits work; edits never invent defaults for a missing member.
 - **Offline fast gate fails on a cold cache**: `--offline` stops with "No cached version of androidx.tracing:tracing:1.2.0 available for offline mode" (the cache holds 1.3.0). Run the same gradle command once without `--offline`, keeping `--dependency-verification strict`, to fill the cache; later runs can go offline again.
+- **Compose: `pointerInput(Unit)` captures once.** Its gesture block keeps the values and lambdas
+  from the first composition, so anything it writes or calls must be un-keyed state or read through
+  `rememberUpdatedState`. Re-keying the state it writes (`remember(hue, saturation)`) orphans it: that
+  froze the colour-wheel drag after the first commit (fixed in 0.1.6).
 
 _Living doc — refresh with /project-docs when it drifts._
