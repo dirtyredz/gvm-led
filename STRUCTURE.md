@@ -105,7 +105,7 @@ Last full review: 2026-10-31
 Baseline review findings are filed as Docket items (`dk list`), not fixed here:
 
 - **Layering and contracts.** store contracts: dk-c73bf266; `BluetoothAddress` couples `light/` to `data/` (dk-af5a99a3); `data/remote` serves only the updater (dk-7c5a45f3); `ReadyDownload` should leave `UpdateController` (dk-b43f9779).
-- **Units.** Wire units and hue wrapping are converted in several UI places (dk-78f785bd, P1).
+- **Units.** Wire units and hue wrapping have one home: `light/protocol/WireUnits.kt` and the canonical `Hue` value type (dk-78f785bd, done).
 - **Presentation.** `SettingsUiState` and `LightsUiState` mix state with presentation (dk-c87b2760, dk-3c43178d).
 - **Release tooling.** Duplicate sha256 helpers (dk-b531cbc2, dk-edc157f5); tooling breadth (dk-69b0919e); fragment files (dk-dc320540).
 - **Research code.** `src/research/ble/` items such as dk-5df95602 (split `live_test.py`). The code is tracked; `.tmp/` holds only disposable inputs and run output.
