@@ -3,6 +3,7 @@ package com.dirtyredz.gvmled.data.repository
 import com.dirtyredz.gvmled.data.model.BluetoothAddress
 import com.dirtyredz.gvmled.data.local.CatalogResolution
 import com.dirtyredz.gvmled.data.local.LightCatalogCodec
+import com.dirtyredz.gvmled.data.local.LightCatalogStore
 import com.dirtyredz.gvmled.data.model.KnownLight
 import com.dirtyredz.gvmled.data.model.LightCatalog
 import com.dirtyredz.gvmled.data.model.LightGroup

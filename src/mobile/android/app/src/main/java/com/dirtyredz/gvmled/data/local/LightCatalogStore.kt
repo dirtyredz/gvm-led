@@ -1,9 +1,8 @@
-package com.dirtyredz.gvmled.data.repository
+package com.dirtyredz.gvmled.data.local
 
-import com.dirtyredz.gvmled.data.local.StoredCatalog
 import com.dirtyredz.gvmled.data.model.LightCatalog
 
-/** Durable catalog storage (`data/local/LightCatalogPreferences`); tests use an in-memory fake. */
+/** Durable catalog storage (`LightCatalogPreferences`); tests use an in-memory fake. */
 interface LightCatalogStore {
     fun read(): StoredCatalog
 

@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.data.repository
 
+import com.dirtyredz.gvmled.data.local.WantedStateStore
 import com.dirtyredz.gvmled.data.local.WantedStateCodec
 import com.dirtyredz.gvmled.data.local.WantedStateFormatException
 import com.dirtyredz.gvmled.data.model.ControlTarget

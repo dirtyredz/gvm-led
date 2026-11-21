@@ -3,7 +3,6 @@ package com.dirtyredz.gvmled.data.local
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import com.dirtyredz.gvmled.data.model.LightCatalog
-import com.dirtyredz.gvmled.data.repository.LightCatalogStore
 
 /**
  * SharedPreferences adapter for the light catalog (file `lights`, shared with version 1). Rules live

@@ -2,7 +2,6 @@ package com.dirtyredz.gvmled.data.local
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
-import com.dirtyredz.gvmled.data.repository.WantedStateStore
 
 /**
  * SharedPreferences adapter for per-light wanted state (its own file, separate from the catalog).

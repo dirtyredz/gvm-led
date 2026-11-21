@@ -1,6 +1,6 @@
-package com.dirtyredz.gvmled.data.repository
+package com.dirtyredz.gvmled.data.local
 
-/** Durable wanted-state storage (`data/local/WantedStatePreferences`); tests use an in-memory fake. */
+/** Durable wanted-state storage (`WantedStatePreferences`); tests use an in-memory fake. */
 interface WantedStateStore {
     /** The saved document, or null when nothing has been saved yet. */
     fun read(): String?
