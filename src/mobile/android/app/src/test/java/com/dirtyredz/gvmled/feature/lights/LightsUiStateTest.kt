@@ -43,6 +43,11 @@ class LightsUiStateTest {
         assertEquals("Updated 01:02:03", observed.updated)
     }
 
+    @Test fun reportedHue72ShowsAsZeroDegrees() {
+        val wrapped = report(Vectors.framed("4C 54 0E 00 33 03 01 0B 32 2C 48 64 02 00 00"))
+        assertEquals("Hue 0°, saturation 100 %", card(live(wrapped)).observed!!.colour)
+    }
+
     @Test fun cctAndSceneReportsShowTheirActiveFields() {
         val cct = report(Vectors.framed("4C 54 0E 00 33 03 00 0B 32 2C 47 64 01 01 01"))
         val cctObserved = card(live(cct)).observed!!

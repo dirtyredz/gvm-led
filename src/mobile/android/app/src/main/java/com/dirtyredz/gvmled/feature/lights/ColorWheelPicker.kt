@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.dirtyredz.gvmled.light.control.Shared
+import com.dirtyredz.gvmled.light.protocol.WireUnits
 
 /** Largest wheel diameter (layout bounds); narrower screens shrink it. */
 private val WHEEL_MAX_SIZE = 240.dp
@@ -49,7 +50,7 @@ private val presets = listOf(
 )
 
 private fun colourOf(selection: HueSat): Color =
-    Color.hsv((selection.hue * ColorWheelMath.DEGREES_PER_STEP).toFloat(), selection.saturation / 100f, 1f)
+    Color.hsv(WireUnits.hueDegrees(selection.hue).toFloat(), selection.saturation / 100f, 1f)
 
 /**
  * Hue/saturation wheel (angle = hue, distance = saturation) with a preview swatch and preset colours.
@@ -73,7 +74,7 @@ internal fun ColorWheelPicker(hue: Shared<Int>, saturation: Shared<Int>, onCommi
                     .background(shown?.let(::colourOf) ?: MaterialTheme.colorScheme.surfaceVariant)
                     .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
             )
-            val readout = shown?.let { "Hue ${it.hue * ColorWheelMath.DEGREES_PER_STEP}°  Saturation ${it.saturation} %" }
+            val readout = shown?.let { "Hue ${WireUnits.hueDegrees(it.hue)}°  Saturation ${it.saturation} %" }
                 ?: "Hue: ${sharedText(hue) { "" }}  Saturation: ${sharedText(saturation) { "" }}"
             Text(readout, style = MaterialTheme.typography.bodyMedium)
         }

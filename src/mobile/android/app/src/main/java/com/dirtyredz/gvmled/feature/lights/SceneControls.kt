@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import com.dirtyredz.gvmled.light.control.LightEdit
 import com.dirtyredz.gvmled.light.control.TargetValues
 import com.dirtyredz.gvmled.light.protocol.SceneCatalog
+import com.dirtyredz.gvmled.light.protocol.WireUnits
 
 /**
  * Scene picker (1-20) plus only the parameters the common scene uses: effect time, CCT, and for
@@ -27,7 +28,7 @@ internal fun SceneControls(values: TargetValues, apply: (LightEdit) -> Unit) {
     if (current == null || !SceneCatalog.isSupported(current)) return
     val fields = SceneCatalog.fields(current)
     if (fields.effectTime) {
-        SharedSlider("Effect time", values.effectTime, SceneCatalog.EFFECT_TIMES, { "${it * 100} ms" }, onCommit = {
+        SharedSlider("Effect time", values.effectTime, SceneCatalog.EFFECT_TIMES, { "${WireUnits.effectTimeMillis(it)} ms" }, onCommit = {
             apply(LightEdit(effectTime = it))
         })
     }

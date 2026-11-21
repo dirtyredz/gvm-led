@@ -1,5 +1,7 @@
 package com.dirtyredz.gvmled.light.control
 
+import com.dirtyredz.gvmled.light.protocol.WireUnits
+
 /**
  * One owner action: only the fields set here change; every other per-light setting is preserved.
  * Fields listed in [fillOnly] supply a value only to a member that has none (for example the slider
@@ -21,7 +23,7 @@ data class LightEdit(
         mode = mode ?: base.mode,
         brightness = brightness ?: base.brightness,
         cct = pick(Field.Cct, cct, base.cct),
-        hue = pick(Field.Hue, hue, base.hue)?.let(Field.Hue::normalize),
+        hue = pick(Field.Hue, hue, base.hue)?.let(WireUnits::normalizeHue),
         saturation = pick(Field.Saturation, saturation, base.saturation),
         scene = pick(Field.Scene, scene, base.scene),
         effectTime = pick(Field.EffectTime, effectTime, base.effectTime),

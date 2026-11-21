@@ -3,6 +3,7 @@ package com.dirtyredz.gvmled.light.control
 import com.dirtyredz.gvmled.light.protocol.FullStateReport
 import com.dirtyredz.gvmled.light.protocol.HelloReply
 import com.dirtyredz.gvmled.light.protocol.SceneCatalog
+import com.dirtyredz.gvmled.light.protocol.WireUnits
 
 /** The light's three control modes, with their wire values (command 06 and the report's mode byte). */
 enum class LightMode(val wire: Int) {
@@ -17,10 +18,10 @@ enum class LightMode(val wire: Int) {
 data class CctRange(val min: Int, val max: Int) {
     operator fun contains(cct: Int): Boolean = cct in min..max
 
-    override fun toString() = "${min * 100}-${max * 100} K"
+    override fun toString() = "${WireUnits.cctKelvin(min)}-${WireUnits.cctKelvin(max)} K"
 
     companion object {
-        fun of(hello: HelloReply): CctRange = CctRange(hello.minCctKelvin / 100, hello.maxCctKelvin / 100)
+        fun of(hello: HelloReply): CctRange = CctRange(WireUnits.cctUnit(hello.minCctKelvin), WireUnits.cctUnit(hello.maxCctKelvin))
 
         /**
          * Greatest minimum through smallest maximum. Null when any range is unknown or they share no

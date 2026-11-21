@@ -21,11 +21,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.dirtyredz.gvmled.light.control.Field
 import com.dirtyredz.gvmled.light.control.LightEdit
 import com.dirtyredz.gvmled.light.control.LightMode
 import com.dirtyredz.gvmled.light.control.Shared
 import com.dirtyredz.gvmled.light.control.TargetValues
+import com.dirtyredz.gvmled.light.protocol.WireUnits
 import kotlin.math.roundToInt
 
 /**
@@ -90,20 +90,14 @@ internal fun CctSlider(values: TargetValues, apply: (LightEdit) -> Unit) {
         Text("Colour temperature: ${values.cctUnavailable}", style = MaterialTheme.typography.bodyMedium)
         return
     }
-    SharedSlider("Colour temperature", values.cct, range.min..range.max, { "${it * 100} K" }, onCommit = { apply(LightEdit(cct = it)) })
+    SharedSlider("Colour temperature", values.cct, range.min..range.max, { "${WireUnits.cctKelvin(it)} K" }, onCommit = { apply(LightEdit(cct = it)) })
 }
 
 @Composable
 internal fun HueSaturationControls(values: TargetValues, apply: (LightEdit) -> Unit) {
-    ColorWheelPicker(values.hue.normalize(Field.Hue), values.saturation) { hue, saturation ->
+    ColorWheelPicker(values.hue, values.saturation) { hue, saturation ->
         apply(LightEdit(hue = hue, saturation = saturation))
     }
-}
-
-private fun Shared<Int>.normalize(field: Field): Shared<Int> = when (this) {
-    is Shared.Same -> Shared.Same(field.normalize(value))
-    Shared.Mixed -> Shared.Mixed
-    Shared.Unknown -> Shared.Unknown
 }
 
 /**

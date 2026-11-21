@@ -4,6 +4,7 @@ import com.dirtyredz.gvmled.light.protocol.FullStateReport
 import com.dirtyredz.gvmled.light.protocol.LegacyCommand
 import com.dirtyredz.gvmled.light.protocol.SceneCatalog
 import com.dirtyredz.gvmled.light.protocol.SetCommand
+import com.dirtyredz.gvmled.light.protocol.WireUnits
 
 /** A complete transaction for one light, or why the wanted state cannot be sent as it stands. */
 sealed interface CommandPlan {
@@ -46,7 +47,7 @@ object ModeCommandPlanner {
         }
         val cct = state.cct
         if (Field.Cct in required(state) && cct != null && range != null && cct !in range) {
-            return "colour temperature ${cct * 100} K is outside its range $range"
+            return "colour temperature ${WireUnits.cctKelvin(cct)} K is outside its range $range"
         }
         return null
     }
@@ -77,15 +78,12 @@ object ModeCommandPlanner {
 /** The mode-specific values of a [WantedState], with their set command and legal wire range. */
 enum class Field(val label: String, val command: Int, val limits: IntRange) {
     Cct("colour temperature", LegacyCommand.CCT, 1..255),
-    Hue("hue", LegacyCommand.HUE, 0..71),
+    Hue("hue", LegacyCommand.HUE, WireUnits.EDITABLE_HUES),
     Saturation("saturation", LegacyCommand.SATURATION, 0..100),
     Scene("scene", LegacyCommand.SCENE, SceneCatalog.IDS),
     EffectTime("effect time", LegacyCommand.EFFECT_TIME, SceneCatalog.EFFECT_TIMES);
 
     fun isLegal(value: Int) = value in limits
-
-    /** The light may report hue 72 (360 degrees), which is the same editable colour as 0. */
-    fun normalize(value: Int): Int = if (this == Hue && value == 72) 0 else value
 
     fun read(state: WantedState): Int? = when (this) {
         Cct -> state.cct
@@ -96,11 +94,11 @@ enum class Field(val label: String, val command: Int, val limits: IntRange) {
     }
 
     /** Reads the corresponding report field in the same normalized units as wanted state. */
-    fun read(report: FullStateReport): Int = normalize(when (this) {
+    fun read(report: FullStateReport): Int = when (this) {
         Cct -> report.cct
-        Hue -> report.hue
+        Hue -> WireUnits.normalizeHue(report.hue)
         Saturation -> report.saturation
         Scene -> report.scene
         EffectTime -> report.effectTime
-    })
+    }
 }

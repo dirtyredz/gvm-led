@@ -18,7 +18,7 @@ data class HelloReply private constructor(
             val minCct = payload[3]
             val maxCct = payload[4]
             if (minCct == 0 || minCct > maxCct) return null
-            return HelloReply(deviceId, deviceType, minCct * 100, maxCct * 100)
+            return HelloReply(deviceId, deviceType, WireUnits.cctKelvin(minCct), WireUnits.cctKelvin(maxCct))
         }
     }
 }
@@ -79,7 +79,7 @@ data class FullStateReport private constructor(
 
     private fun isValid(): Boolean =
         power in 0..1 && pick in 1..12 && brightness in 0..100 && cct in 1..255 &&
-            hue in 0..72 && saturation in 0..100 && mode in 1..3 && scene in 0..20 &&
+            hue in 0..WireUnits.HUE_STEPS && saturation in 0..100 && mode in 1..3 && scene in 0..20 &&
             effectTime in 0..50 && !(mode == 3 && scene == 0)
 
     companion object {

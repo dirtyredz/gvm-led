@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.feature.lights
 
+import com.dirtyredz.gvmled.light.protocol.WireUnits
 import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -30,15 +31,15 @@ class ColorWheelMathTest {
     }
 
     @Test fun hueSnapsToFiveDegreesAndWraps() {
-        assertEquals(1, ColorWheelMath.snapHue(3.0))
-        assertEquals(0, ColorWheelMath.snapHue(2.4))
-        assertEquals(0, ColorWheelMath.snapHue(359.0))
-        assertEquals(71, ColorWheelMath.snapHue(-5.0))
-        assertEquals(71, ColorWheelMath.snapHue(357.4))
+        assertEquals(1, WireUnits.hueFromDegrees(3.0))
+        assertEquals(0, WireUnits.hueFromDegrees(2.4))
+        assertEquals(0, WireUnits.hueFromDegrees(359.0))
+        assertEquals(71, WireUnits.hueFromDegrees(-5.0))
+        assertEquals(71, WireUnits.hueFromDegrees(357.4))
     }
 
     @Test fun offsetRoundTripsEverySelection() {
-        for (hue in 0 until ColorWheelMath.HUE_STEPS) for (sat in listOf(20, 55, 100)) {
+        for (hue in 0 until WireUnits.HUE_STEPS) for (sat in listOf(20, 55, 100)) {
             val (x, y) = ColorWheelMath.toOffset(HueSat(hue, sat), 200f)
             assertEquals(HueSat(hue, sat), ColorWheelMath.fromOffset(x, y, 200f))
         }

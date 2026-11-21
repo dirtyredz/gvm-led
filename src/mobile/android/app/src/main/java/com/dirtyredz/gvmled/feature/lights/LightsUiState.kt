@@ -7,6 +7,7 @@ import com.dirtyredz.gvmled.data.repository.LightEntry
 import com.dirtyredz.gvmled.light.control.ApplyStatus
 import com.dirtyredz.gvmled.light.control.TargetValues
 import com.dirtyredz.gvmled.light.protocol.FullStateReport
+import com.dirtyredz.gvmled.light.protocol.WireUnits
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -32,7 +33,7 @@ data class LightsUiState(
     val settingsProblem: String? = null,
 )
 
-/** Display-ready values for one light. Mapped from observed wire units here, but controls also convert wire units (consolidation: dk-78f785bd). */
+/** Display-ready values for one light. Mapped from observed wire units; every unit conversion goes through [WireUnits]. */
 data class LightCardModel(
     val address: String,
     val addressSuffix: String,
@@ -110,9 +111,9 @@ private val TIME = DateTimeFormatter.ofPattern("HH:mm:ss")
 
 internal fun observed(report: FullStateReport, atMillis: Long?, zone: ZoneId): ObservedLightState {
     val (mode, colourLabel, colour) = when (report.mode) {
-        1 -> Triple("CCT", "Colour temperature", "${report.cct * 100} K")
-        2 -> Triple("HSI", "Colour", "Hue ${report.hue * 5}°, saturation ${report.saturation} %")
-        else -> Triple("Scene", "Scene", "Scene ${report.scene}, effect time ${report.effectTime * 100} ms")
+        1 -> Triple("CCT", "Colour temperature", "${WireUnits.cctKelvin(report.cct)} K")
+        2 -> Triple("HSI", "Colour", "Hue ${WireUnits.hueDegrees(report.hue)}°, saturation ${report.saturation} %")
+        else -> Triple("Scene", "Scene", "Scene ${report.scene}, effect time ${WireUnits.effectTimeMillis(report.effectTime)} ms")
     }
     return ObservedLightState(
         power = if (report.power == 1) "On" else "Off",
