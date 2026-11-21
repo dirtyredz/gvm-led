@@ -1,15 +1,29 @@
-# GVM LED lights: control protocol from the official app (static analysis, 2026-10-25)
+# GVM LED lights: control protocol (800D3X-RGB, legacy BT_LED GATT path)
+
+## Confirmed: legacy GATT path (as proven on both lights)
+
+Both 800D3X-RGB lights advertise as `BT_LED` and are controlled over the **legacy plain-GATT path**, not Tuya mesh. Confirmed by a PC scan (2026-10-25), a `--check` query run and a visible proof run with camera frames (2026-10-26). Details are in the sections below ("PC scan results", "Confirmed legacy framing", "`--check` result", "Visible proof run", "App control rules derived from the proof").
+
+- **GATT:** service `00010203-0405-0607-0809-0a0b0c0d1910`, one characteristic `...0d2b10` (notify, write-without-response, read). No pairing needed; one connection at a time, phone app closed.
+- **Framing:** `4C 54 | LEN | DEVID | DEVTYPE | body | CRC_hi CRC_lo | FF`, CRC16/XMODEM big-endian over `4C` through the end of body. Both lights: ID `00`, type `33` (`rgb33`).
+- **Commands:** hello on connect, then set commands with body `57 00 CMD 01 VAL`: power `00`, pick `01`, brightness `02` (0-100 %), CCT `03` (K/100, 3200-5600 K), hue `04` (degrees/5), saturation `05`, mode `06` (1 CCT, 2 HSI, 3 scenes), scene `07`, effect time `08`. Lights push a full state report (kind `03`) about every 4 s.
+- **Proof status:** all set commands work on both lights with 0 mismatches against fresh state reports; the colour-bug check (mode-first HSI after reconnect, no CCT detour) passed on hardware and on camera.
+- **App rule:** transaction order is mode first, then mode values, brightness, power last; confirm only from a full `03` report received after the final write.
+
+## Historical: static analysis (2026-10-25, superseded for transport choice)
+
+Everything in this block is a read of the decompiled official app (never run on a light). Its conclusion that the lights are "almost certainly Tuya mesh" was **NOT borne out**; the lights use the legacy GATT path above. The mesh material is kept as reference (the legacy command set in the confirmed sections replaces the mesh command table here; sections 2-3 describe the mesh path only).
 
 Source: official Android app "GVM LED" `com.gvm.cloudphone` v1.8.0 (APKPure, sha256 `3a5aa2fa...e6509b6`), decompiled with jadx 1.5.6 (never executed). Decompiled tree: `.tmp/decompiled/sources/`, manifest in `.tmp/res/`. Not obfuscated beyond use: GVM's own code (`com.gvm.cloudphone`) is readable; the Tuya SDK is partly renamed but workable. Everything below is read from code, not yet confirmed on a real light.
 
-## Summary
+### Summary
 
-- **Two transports live in one app.** (1) **Tuya BLE SIG-mesh** (the main path, all current screens: HSI, CCT, effects, groups). (2) A **legacy plain-GATT path** for old lights whose BLE name starts with `BT_LED`. The 800D3X-RGB is a "Bluetooth mesh" product, so it is almost certainly path 1. **Unconfirmed**: check on the real light (see Open questions).
+- **Two transports live in one app.** (1) **Tuya BLE SIG-mesh** (the main path, all current screens: HSI, CCT, effects, groups). (2) A **legacy plain-GATT path** for old lights whose BLE name starts with `BT_LED`. At the time the 800D3X-RGB was assumed to be a "Bluetooth mesh" product, so path 1; **this was NOT borne out**: the PC scan showed both lights use path 2, the legacy GATT path (see "PC scan results" below).
 - **Feasibility: harder than plain GATT, but doable.** Mesh traffic is encrypted with a per-home network key + app key that the **Tuya cloud generates** (`thing.m.device.sig.mesh.create`) and stores; they are not hard-coded in the app. The lights hold the keys the owner's phone account provisioned. Two ways in: (a) factory-reset both lights and **provision them into our own SIG mesh** with our own random keys (standard SIG provisioning; the app's Start PDU uses no-OOB unless the node advertises Output OOB), then talk the vendor model ourselves; (b) pull the existing keys for the owner's Tuya account (anonymous account: `loginOrRegisterWithUid(country, android_id, "123456")`) from Tuya's cloud. (a) needs no cloud and no vendor credentials; (b) uses the vendor's OEM app key/secret and is not recommended.
 - **Application payload is simple and un-encrypted above the mesh layer**: one Tuya data point, DP `"101"` (raw, hex string), carrying a tiny command: `opcode, little-endian fields`. No header, no CRC on mesh commands. Hue 0-360 in 1 deg, saturation 0-100, intensity 0-1000 (0.1 % steps), CCT in kelvin (16-bit).
 - **Unknowns that block a custom app**: the Tuya vendor-model opcode/framing that wraps DP 101 on the mesh (inside the Tuya SDK, not read in full) and whether provisioning needs Tuya-specific steps. A phone BLE capture would not help (mesh PDUs are encrypted); reading `com.thingclips.sdk.sigmesh` / `...sdk.bluetooth` further and testing on a reset light will.
 
-## 1. Transport details
+### 1. Transport details
 
 | Item | Value | Evidence |
 |---|---|---|
@@ -21,7 +35,7 @@ Source: official Android app "GVM LED" `com.gvm.cloudphone` v1.8.0 (APKPure, sha
 | Legacy GATT (`BT_LED*` only) | service `00010203-0405-0607-0809-0a0b0c0d1910`, char `...2b10` (write w/ response + notify, CCCD `01 00`), MTU 100, ASCII-hex strings converted to bytes, split in 20-byte chunks, 200 ms apart, `\r\n` appended | `Service/BLEService.java`; name filter `startsWith("BT")` / `contains("BT_LED")` in `DeviceActivity` |
 | Wi-Fi | **none**: no `DatagramSocket`/`Socket` use in `com.gvm` | grep |
 
-## 2. Command table (mesh path, DP 101 payload, all hex, multi-byte = little-endian)
+### 2. Command table (mesh path, DP 101 payload, all hex, multi-byte = little-endian)
 
 Source: `InstructData.java` (templates) plus the Activities that fill them. `I` = intensity u16.
 
@@ -45,7 +59,7 @@ Source: `InstructData.java` (templates) plus the Activities that fill them. `I` 
 
 Throttle: UI sends at most one packet per 200 ms per family (`sendCommand1/2`, `isRunning`).
 
-## 3. State read-back (yes, on request)
+### 3. State read-back (yes, on request)
 
 Replies come back as DP 101 via `IMeshDevListener.onDpUpdate` (`ThingUtil.initTuyaBlueMeshDevice`).
 - `5B mode I_lo I_hi ...` e.g. HSI: `5B 01 I_lo I_hi H_lo H_hi S`; CCT: `5B 00 I.. K_lo K_hi gm cur`.
@@ -53,26 +67,26 @@ Replies come back as DP 101 via `IMeshDevListener.onDpUpdate` (`ThingUtil.initTu
 - `4C 54 00 00 FC 53 05 ? min_lo min_hi max_lo max_hi` = CCT range reply to the hello (`HsiActivity`/`ControlActivity.mainData`).
 - Mesh node online/offline via `onStatusChanged`; app calls `queryAllOnLineStatusByLocal` and sets `OnlineMode.RESPONSE_ONLINE`.
 
-## 4. Connect / resume behaviour
+### 4. Connect / resume behaviour
 
 1. App start: Tuya login, find/create home + SigMesh, `startClient` (proxy connection to the nearest provisioned node), scan for new nodes.
 2. Tapping a light opens `ControlActivity`, which after 100 ms sends `5B` then (200 ms later) `5A`, parses `5B`'s mode byte and **jumps to the screen for that mode** (HSI/CCT/...). So on a fresh open the app trusts the light.
 3. `HsiActivity.onResume()` and `CctActivity.initView()` / `HsiActivity.initData()` send **only the intensity packet** (`A1` / `C1`); hue/sat (`A2`) is only sent when the user moves a control. `HsiActivity.onResume` is empty: there is no re-sync or re-send of the full colour state when the app returns from background.
 4. Legacy path only: `ControlUtil.controlDev` suppresses a command equal to the last one (`flag`), and a 1 s timer re-sends the hello until answered.
 
-## 5. The "must toggle to standard and back" quirk (hypotheses from code, not proven)
+### 5. The "must toggle to standard and back" quirk (hypotheses from code, not proven)
 
 - There is no explicit mode-select command; the light switches mode when it receives a colour-family command. When the app comes back, the existing HSI screen's UI state (hue, sat) is unchanged and nothing is re-sent except `A1`. If `A1` alone does not switch the light to HSI (likely: it only carries intensity), the light stays in its previous mode until `A2` is sent. Toggling to CCT and back fires a fresh `C*`/`A*` sequence, which is why it "sticks".
 - Contributing: while backgrounded the Tuya client may drop the mesh proxy link; commands sent during reconnect are fire-and-forget (`publishDps`, errors only logged), so the first colour packet can be lost silently. `HsiActivity` also rewrites hue 0 to 10 and sat 0 to 10 when parsing `5B`.
 - **For our app**: on every connect/resume send the complete set for the wanted mode (`A2` then `A1`, or `C2` then `C1`), re-query with `5B`, and retry until a `5B` reply shows the expected mode.
 
-## 6. Two lights
+### 6. Two lights
 
 - Per light: `publishDps(nodeId, category, ...)` to a unicast mesh node.
 - Group: Tuya group = SIG group address; `multicastDps(group.localId, category, {"101":hex})` (`ThingUtil.sendExDps`, `CreateGroupActivity`). One packet reaches all members, so two lights can be set to identical colours at once; per-light differences use two unicasts.
 - Group membership/subscriptions are set at provisioning/config time (`thing.m.device.ble.mesh.*` APIs, vendor subscription list).
 
-## 7. Open questions to confirm on the real lights
+### 7. Open questions to confirm on the real lights
 
 1. **Which path?** nRF Connect scan on a light that is NOT connected to the app: name starting `BT_LED` plus service `...1910` = legacy plain GATT (then it is trivially scriptable: header `4C54`, CRC16/XMODEM, see `ControlUtil`). Service `0x1827`/`0x1828` or `0x1827` beacon = Tuya mesh.
 2. For mesh: what exact vendor-model opcode wraps DP 101 and how its TID/framing works (read `ThingVendorModelStatus`, `VendorModelMessageStatus` in `com.thingclips.sdk.sigmesh.provisioner` next; or provision a reset light in nRF Mesh and observe).
@@ -80,7 +94,7 @@ Replies come back as DP 101 via `IMeshDevListener.onDpUpdate` (`ThingUtil.initTu
 4. Does a reset light accept no-OOB provisioning from a stock SIG provisioner (or require Tuya's device-authorisation step)? Resetting forgets the official app's pairing; re-pair there afterwards.
 5. Real CCT range per model (reply to hello) and meaning of `fx` and `C2` flag.
 
-## 8. Evidence references (all under `.tmp/decompiled/sources/com/`)
+### 8. Evidence references (all under `.tmp/decompiled/sources/com/`)
 
 `gvm/cloudphone/InstructData.java` (opcode templates, `byteToString`, `checkSumming`); `Util/ThingUtil.java` (`publishDpsDevice`, `sendExDps`, `searchDevice`, `initTuyaBlueMeshDevice`, `init`); `Activity/HsiActivity.java` (`hsiOne`, `hsiTwo`, `getData` 5A/5B parse); `Activity/CctActivity.java`; `Activity/ControlActivity.java` (`SyncStatus`, `mainData`); `Service/BLEService.java` + `Util/ControlUtil.java` + `Util/CRC16.java` (legacy); `thingclips/sdk/bluetooth/bpbdqdp.java` (provisioning start PDU); `thingclips/smart/sdk/bean/SigMeshBean.java`. Vendor Tuya OEM app key/secret are in `AndroidManifest.xml` meta-data (not copied here).
 
