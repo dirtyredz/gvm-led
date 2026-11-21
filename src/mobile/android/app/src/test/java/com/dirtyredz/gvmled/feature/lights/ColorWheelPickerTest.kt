@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.feature.lights
 
+import com.dirtyredz.gvmled.light.protocol.Hue
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
@@ -32,7 +33,7 @@ class ColorWheelPickerTest {
         val received = mutableListOf<Int>()
         rule.setContent {
             val current = generation.value
-            MaterialTheme { ColorWheelPicker(Shared.Same(0), Shared.Same(100)) { _, _ -> received += current } }
+            MaterialTheme { ColorWheelPicker(Shared.Same(Hue(0)), Shared.Same(100)) { _, _ -> received += current } }
         }
         wheel.performTouchInput { down(center); up() }
         rule.waitForIdle()
@@ -44,7 +45,7 @@ class ColorWheelPickerTest {
     }
 
     @Test fun secondDragShowsPreviewBeforeRelease() {
-        val input = mutableStateOf(HueSat(0, 100))
+        val input = mutableStateOf(HueSat(Hue(0), 100))
         var commits = 0
         rule.setContent {
             MaterialTheme {
@@ -64,7 +65,7 @@ class ColorWheelPickerTest {
         wheel.performTouchInput { up() }
         rule.waitForIdle()
         assertEquals(1, commits)
-        assertEquals(HueSat(18, 58), input.value)
+        assertEquals(HueSat(Hue(18), 58), input.value)
 
         wheel.performTouchInput {
             down(Offset(width * .5f, height * .75f))
@@ -78,7 +79,7 @@ class ColorWheelPickerTest {
         wheel.performTouchInput { up() }
         rule.waitForIdle()
         assertEquals(2, commits)
-        assertEquals(HueSat(36, 58), input.value)
+        assertEquals(HueSat(Hue(36), 58), input.value)
         assertEquals("Hue 180°  Saturation 58 %", held)
     }
 }

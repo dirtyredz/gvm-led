@@ -1,6 +1,6 @@
 package com.dirtyredz.gvmled.light.control
 
-import com.dirtyredz.gvmled.light.protocol.WireUnits
+import com.dirtyredz.gvmled.light.protocol.Hue
 
 /**
  * One owner action: only the fields set here change; every other per-light setting is preserved.
@@ -12,7 +12,7 @@ data class LightEdit(
     val mode: LightMode? = null,
     val brightness: Int? = null,
     val cct: Int? = null,
-    val hue: Int? = null,
+    val hue: Hue? = null,
     val saturation: Int? = null,
     val scene: Int? = null,
     val effectTime: Int? = null,
@@ -23,13 +23,13 @@ data class LightEdit(
         mode = mode ?: base.mode,
         brightness = brightness ?: base.brightness,
         cct = pick(Field.Cct, cct, base.cct),
-        hue = pick(Field.Hue, hue, base.hue)?.let(WireUnits::normalizeHue),
+        hue = pick(Field.Hue, hue, base.hue),
         saturation = pick(Field.Saturation, saturation, base.saturation),
         scene = pick(Field.Scene, scene, base.scene),
         effectTime = pick(Field.EffectTime, effectTime, base.effectTime),
     )
 
-    private fun pick(field: Field, edited: Int?, current: Int?): Int? = when {
+    private fun <T> pick(field: Field, edited: T?, current: T?): T? = when {
         edited == null -> current
         field in fillOnly -> current ?: edited
         else -> edited

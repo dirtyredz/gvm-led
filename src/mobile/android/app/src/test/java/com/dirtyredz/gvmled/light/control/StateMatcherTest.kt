@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.light.control
 
+import com.dirtyredz.gvmled.light.protocol.Hue
 import com.dirtyredz.gvmled.light.connection.Vectors
 import com.dirtyredz.gvmled.light.protocol.FullStateReport
 import com.dirtyredz.gvmled.light.protocol.LegacyFrameDecoder
@@ -21,7 +22,7 @@ class StateMatcherTest {
     private val offCct = report("4C 54 0E 00 33 03 00 0B 1E 38 00 14 01 14 05 BC B6")
     private val range = CctRange(32, 56)
 
-    private val wantedHsi = WantedState(true, LightMode.Hsi, 50, cct = 44, hue = 48, saturation = 100)
+    private val wantedHsi = WantedState(true, LightMode.Hsi, 50, cct = 44, hue = Hue(48), saturation = 100)
 
     @Test fun hsiWantedMatchesTheHsiReport() {
         assertTrue(StateMatcher.matches(wantedHsi, hsi))
@@ -32,7 +33,7 @@ class StateMatcherTest {
         val fullCircle = LegacyFrameDecoder().feed(
             Vectors.framed("4C 54 0E 00 33 03 01 0B 32 2C 48 64 02 01 01"),
         ).single() as FullStateReport
-        assertTrue(StateMatcher.matches(wantedHsi.copy(hue = 0), fullCircle))
+        assertTrue(StateMatcher.matches(wantedHsi.copy(hue = Hue(0)), fullCircle))
     }
 
     @Test fun inactiveCctIsIgnoredInHsiMode() {
@@ -40,7 +41,7 @@ class StateMatcherTest {
     }
 
     @Test fun cctWantedIgnoresHueAndSaturation() {
-        val wanted = WantedState(true, LightMode.Cct, 50, cct = 32, hue = 0, saturation = 0)
+        val wanted = WantedState(true, LightMode.Cct, 50, cct = 32, hue = Hue(0), saturation = 0)
         assertTrue(StateMatcher.matches(wanted, cct))
     }
 
@@ -61,9 +62,9 @@ class StateMatcherTest {
     }
 
     @Test fun sceneTwentyComparesHueSaturationAndEffectTime() {
-        val wanted = WantedState(true, LightMode.Scene, 50, hue = 0, saturation = 0, scene = 20, effectTime = 5)
+        val wanted = WantedState(true, LightMode.Scene, 50, hue = Hue(0), saturation = 0, scene = 20, effectTime = 5)
         assertTrue(StateMatcher.matches(wanted, scene20))
-        assertEquals(listOf("hue"), StateMatcher.mismatches(wanted.copy(hue = 7), scene20))
+        assertEquals(listOf("hue"), StateMatcher.mismatches(wanted.copy(hue = Hue(7)), scene20))
     }
 
     @Test fun powerOffComparesPower() {
@@ -74,7 +75,7 @@ class StateMatcherTest {
 
     @Test fun fromReportCopiesEveryFieldOfAnOffSceneReport() {
         assertEquals(
-            WantedState(false, LightMode.Cct, 30, cct = 56, hue = 0, saturation = 20, scene = 20, effectTime = 5),
+            WantedState(false, LightMode.Cct, 30, cct = 56, hue = Hue(0), saturation = 20, scene = 20, effectTime = 5),
             WantedState.fromReport(offCct, range),
         )
     }
@@ -82,7 +83,7 @@ class StateMatcherTest {
     @Test fun fromReportDropsACctOutsideTheLightsRange() {
         val state = WantedState.fromReport(cct, CctRange(40, 50))!!
         assertNull(state.cct)
-        assertEquals(60, state.hue)
+        assertEquals(Hue(60), state.hue)
     }
 
     @Test fun fromReportKeepsSceneOneWithEffectTimeOne() {

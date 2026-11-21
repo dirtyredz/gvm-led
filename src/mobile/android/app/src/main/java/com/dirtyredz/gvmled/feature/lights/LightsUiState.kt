@@ -7,6 +7,7 @@ import com.dirtyredz.gvmled.data.repository.LightEntry
 import com.dirtyredz.gvmled.light.control.ApplyStatus
 import com.dirtyredz.gvmled.light.control.TargetValues
 import com.dirtyredz.gvmled.light.protocol.FullStateReport
+import com.dirtyredz.gvmled.light.protocol.Hue
 import com.dirtyredz.gvmled.light.protocol.WireUnits
 import java.time.Instant
 import java.time.ZoneId
@@ -112,7 +113,7 @@ private val TIME = DateTimeFormatter.ofPattern("HH:mm:ss")
 internal fun observed(report: FullStateReport, atMillis: Long?, zone: ZoneId): ObservedLightState {
     val (mode, colourLabel, colour) = when (report.mode) {
         1 -> Triple("CCT", "Colour temperature", "${WireUnits.cctKelvin(report.cct)} K")
-        2 -> Triple("HSI", "Colour", "Hue ${WireUnits.hueDegrees(report.hue)}°, saturation ${report.saturation} %")
+        2 -> Triple("HSI", "Colour", "Hue ${WireUnits.hueDegrees(Hue(report.hue))}°, saturation ${report.saturation} %")
         else -> Triple("Scene", "Scene", "Scene ${report.scene}, effect time ${WireUnits.effectTimeMillis(report.effectTime)} ms")
     }
     return ObservedLightState(

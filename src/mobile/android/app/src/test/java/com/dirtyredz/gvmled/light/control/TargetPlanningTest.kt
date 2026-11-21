@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.light.control
 
+import com.dirtyredz.gvmled.light.protocol.Hue
 import com.dirtyredz.gvmled.light.protocol.FullStateReport
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -14,7 +15,7 @@ class TargetPlanningTest {
     private val names = mapOf(a to "Key", b to "Fill", c to "Back")
     private val name: (String) -> String = { names.getValue(it) }
 
-    private val key = WantedState(power = true, mode = LightMode.Hsi, brightness = 50, hue = 48, saturation = 100, cct = 44)
+    private val key = WantedState(power = true, mode = LightMode.Hsi, brightness = 50, hue = Hue(48), saturation = 100, cct = 44)
     private val fill = WantedState(power = false, mode = LightMode.Cct, brightness = 30, cct = 30)
     private val back = WantedState(power = true, mode = LightMode.Scene, brightness = 70, scene = 19, cct = 40, effectTime = 20)
     private val wanted = mapOf(a to key, b to fill, c to back)
@@ -51,25 +52,26 @@ class TargetPlanningTest {
     }
 
     @Test fun switchingModeFillsOnlyMissingValuesAndNamesAMemberStillMissingOne() {
-        val toHsi = LightEdit(mode = LightMode.Hsi, hue = 12, saturation = 40, fillOnly = setOf(Field.Hue, Field.Saturation))
+        val toHsi = LightEdit(mode = LightMode.Hsi, hue = Hue(12), saturation = 40, fillOnly = setOf(Field.Hue, Field.Saturation))
         val next = accepted(expand(listOf(a, b), toHsi))
         assertEquals(key, next[a]) // already HSI with its own hue: nothing overwritten
-        assertEquals(fill.copy(mode = LightMode.Hsi, hue = 12, saturation = 40), next[b])
+        assertEquals(fill.copy(mode = LightMode.Hsi, hue = Hue(12), saturation = 40), next[b])
 
         val bare = expand(listOf(a, b), LightEdit(mode = LightMode.Hsi))
         assertEquals(EditPlan.Rejected("Fill needs a value for hue"), bare)
     }
 
     @Test fun anExplicitEditOverwritesEveryMembersValue() {
-        val next = accepted(expand(listOf(a, b), LightEdit(mode = LightMode.Hsi, hue = 12, saturation = 40)))
-        assertEquals(12, next.getValue(a).hue)
-        assertEquals(12, next.getValue(b).hue)
+        val next = accepted(expand(listOf(a, b), LightEdit(mode = LightMode.Hsi, hue = Hue(12), saturation = 40)))
+        assertEquals(Hue(12), next.getValue(a).hue)
+        assertEquals(Hue(12), next.getValue(b).hue)
     }
 
     @Test fun hueWrapsAt360DegreesForAdoptionAndEditing() {
         val report = checkNotNull(FullStateReport.decode(0, 0x33, listOf(1, 1, 50, 44, 72, 100, 2, 0, 0)))
-        assertEquals(0, WantedState.fromReport(report, ranges.getValue(a))?.hue)
-        assertEquals(0, LightEdit(brightness = 60).applyTo(key.copy(hue = 72)).hue)
+        assertEquals(Hue(0), WantedState.fromReport(report, ranges.getValue(a))?.hue)
+        assertEquals(Hue(0), LightEdit(hue = Hue(72)).applyTo(key).hue)
+        assertEquals(Hue(0), Hue(72))
         assertEquals(0..71, Field.Hue.limits)
     }
 

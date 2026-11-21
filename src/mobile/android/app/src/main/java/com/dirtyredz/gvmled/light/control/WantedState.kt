@@ -2,6 +2,7 @@ package com.dirtyredz.gvmled.light.control
 
 import com.dirtyredz.gvmled.light.protocol.FullStateReport
 import com.dirtyredz.gvmled.light.protocol.HelloReply
+import com.dirtyredz.gvmled.light.protocol.Hue
 import com.dirtyredz.gvmled.light.protocol.SceneCatalog
 import com.dirtyredz.gvmled.light.protocol.WireUnits
 
@@ -48,7 +49,7 @@ data class WantedState(
     val mode: LightMode,
     val brightness: Int,
     val cct: Int? = null,
-    val hue: Int? = null,
+    val hue: Hue? = null,
     val saturation: Int? = null,
     val scene: Int? = null,
     val effectTime: Int? = null,
@@ -66,7 +67,7 @@ data class WantedState(
                 mode = mode,
                 brightness = report.brightness,
                 cct = report.cct.takeIf { it in range },
-                hue = Field.Hue.read(report),
+                hue = Hue(report.hue),
                 saturation = report.saturation,
                 scene = report.scene.takeIf(SceneCatalog::isSupported),
                 effectTime = report.effectTime.takeIf { it in SceneCatalog.EFFECT_TIMES },

@@ -3,6 +3,7 @@ package com.dirtyredz.gvmled.data.local
 import com.dirtyredz.gvmled.light.control.LightMode
 import com.dirtyredz.gvmled.light.control.WantedRecord
 import com.dirtyredz.gvmled.light.control.WantedState
+import com.dirtyredz.gvmled.light.protocol.Hue
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -43,7 +44,7 @@ class WantedStateCodecTest {
     @Test fun roundTripPreservesRevisionsAndNulls() {
         val records = linkedMapOf(
             a to WantedRecord(1, WantedState(true, LightMode.Cct, 50)),
-            b to WantedRecord(7, WantedState(false, LightMode.Scene, 30, 56, 0, 20, 19, 20)),
+            b to WantedRecord(7, WantedState(false, LightMode.Scene, 30, 56, Hue(0), 20, 19, 20)),
         )
         val decoded = WantedStateCodec.decode(WantedStateCodec.encode(records))
         assertEquals(records, decoded)
@@ -86,7 +87,7 @@ class WantedStateCodecTest {
     @Test fun outOfRangeHueIsRejected() = assertCorrupt(doc(light(over = mapOf("hue" to "73"))))
 
     @Test fun legacy360DegreeHueNormalizesToZero() {
-        assertEquals(0, WantedStateCodec.decode(doc(light(over = mapOf("hue" to "72")))).getValue(a).state.hue)
+        assertEquals(Hue(0), WantedStateCodec.decode(doc(light(over = mapOf("hue" to "72")))).getValue(a).state.hue)
     }
 
     @Test fun outOfRangeBrightnessIsRejected() = assertCorrupt(doc(light(over = mapOf("brightness" to "101"))))

@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.light.control
 
+import com.dirtyredz.gvmled.light.protocol.Hue
 import com.dirtyredz.gvmled.light.connection.FakeLightTransport
 import com.dirtyredz.gvmled.light.connection.FakeTransports
 import com.dirtyredz.gvmled.light.connection.LightSession
@@ -28,7 +29,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class LightSynchronizerTest {
     private val address = "94:C9:60:E5:D7:6F"
-    private val amber = WantedState(power = true, mode = LightMode.Hsi, brightness = 50, hue = 7, saturation = 100, cct = 32)
+    private val amber = WantedState(power = true, mode = LightMode.Hsi, brightness = 50, hue = Hue(7), saturation = 100, cct = 32)
     private val hsiSequence = listOf(
         LegacyCommand.MODE to 2, LegacyCommand.HUE to 7, LegacyCommand.SATURATION to 100,
         LegacyCommand.BRIGHTNESS to 50, LegacyCommand.POWER to 1,
@@ -108,7 +109,7 @@ class LightSynchronizerTest {
     }
 
     @Test fun fullCircleHueReportConfirmsZeroHueWithoutRetry() = runTest {
-        val zeroHue = amber.copy(hue = 0)
+        val zeroHue = amber.copy(hue = Hue(0))
         val light = SimulatedLight(hue = 72, saturation = 100)
         val rig = rig(WantedRecord(2, zeroHue), light)
         runCurrent()
@@ -150,7 +151,7 @@ class LightSynchronizerTest {
         val rig = rig(WantedRecord(2, amber))
         runCurrent()
         advanceTimeBy(450) // mode and hue of revision 2 written
-        rig.wanted.value = WantedRecord(3, amber.copy(hue = 48))
+        rig.wanted.value = WantedRecord(3, amber.copy(hue = Hue(48)))
         advanceTimeBy(2_000)
         val written = rig.light.written
         val restart = written.indexOfLast { it == (LegacyCommand.MODE to 2) }
@@ -194,7 +195,7 @@ class LightSynchronizerTest {
         rig.report()
         runCurrent()
         assertEquals(1, rig.seeds)
-        assertEquals(WantedState(true, LightMode.Hsi, 34, cct = 32, hue = 48, saturation = 100, scene = 1, effectTime = 1), rig.wanted.value?.state)
+        assertEquals(WantedState(true, LightMode.Hsi, 34, cct = 32, hue = Hue(48), saturation = 100, scene = 1, effectTime = 1), rig.wanted.value?.state)
         assertEquals(ApplyStatus.Confirmed(1), rig.sync.status.value)
         advanceTimeBy(10_000)
         assertTrue(light.written.isEmpty())

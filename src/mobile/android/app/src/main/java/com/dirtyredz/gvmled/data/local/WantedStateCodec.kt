@@ -14,7 +14,7 @@ import com.dirtyredz.gvmled.light.control.LightMode
 import com.dirtyredz.gvmled.light.control.Field
 import com.dirtyredz.gvmled.light.control.WantedRecord
 import com.dirtyredz.gvmled.light.control.WantedState
-import com.dirtyredz.gvmled.light.protocol.WireUnits
+import com.dirtyredz.gvmled.light.protocol.Hue
 
 /**
  * Pure rules for the saved wanted state (version 1): one JSON document of per-light records keyed by
@@ -46,7 +46,7 @@ object WantedStateCodec {
                 "mode" to number(state.mode.wire),
                 "brightness" to number(state.brightness),
                 "cct" to number(state.cct),
-                "hue" to number(state.hue),
+                "hue" to number(state.hue?.step),
                 "saturation" to number(state.saturation),
                 "scene" to number(state.scene),
                 "effectTime" to number(state.effectTime),
@@ -85,7 +85,7 @@ object WantedStateCodec {
             mode = LightMode.fromWire(required(light, "mode")) ?: corrupt(),
             brightness = required(light, "brightness"),
             cct = optional(light, "cct"),
-            hue = optional(light, "hue")?.let(WireUnits::normalizeHue),
+            hue = optional(light, "hue")?.let { Hue(it) },
             saturation = optional(light, "saturation"),
             scene = optional(light, "scene"),
             effectTime = optional(light, "effectTime"),

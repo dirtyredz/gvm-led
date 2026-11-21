@@ -3,6 +3,7 @@ package com.dirtyredz.gvmled.feature.lights
 import com.dirtyredz.gvmled.light.control.Field
 import com.dirtyredz.gvmled.light.control.LightEdit
 import com.dirtyredz.gvmled.light.control.LightMode
+import com.dirtyredz.gvmled.light.protocol.Hue
 import com.dirtyredz.gvmled.light.protocol.SceneCatalog
 import com.dirtyredz.gvmled.light.control.TargetValues
 
@@ -12,12 +13,12 @@ import com.dirtyredz.gvmled.light.control.TargetValues
  * 1 s effect time, the middle of the common CCT range). They only fill gaps ([LightEdit.fillOnly]);
  * a member's own stored value always wins. No CCT is offered without a common range.
  */
-internal data class ModeFill(val cct: Int?, val hue: Int, val saturation: Int, val effectTime: Int) {
+internal data class ModeFill(val cct: Int?, val hue: Hue, val saturation: Int, val effectTime: Int) {
     companion object {
         fun from(values: TargetValues) = ModeFill(
             cct = values.cct.valueOrNull?.takeIf { cct -> values.cctRange?.let { cct in it } == true }
                 ?: values.cctRange?.let { (it.min + it.max) / 2 },
-            hue = values.hue.valueOrNull ?: 0,
+            hue = values.hue.valueOrNull ?: Hue(0),
             saturation = values.saturation.valueOrNull ?: 100,
             effectTime = values.effectTime.valueOrNull ?: 10,
         )

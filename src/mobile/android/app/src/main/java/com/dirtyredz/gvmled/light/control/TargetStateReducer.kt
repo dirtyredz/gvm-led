@@ -1,5 +1,7 @@
 package com.dirtyredz.gvmled.light.control
 
+import com.dirtyredz.gvmled.light.protocol.Hue
+
 /** One control value across a target's members. */
 sealed interface Shared<out T> {
     /** Every member has this value. */
@@ -20,7 +22,7 @@ data class TargetValues(
     val mode: Shared<LightMode>,
     val brightness: Shared<Int>,
     val cct: Shared<Int>,
-    val hue: Shared<Int>,
+    val hue: Shared<Hue>,
     val saturation: Shared<Int>,
     val scene: Shared<Int>,
     val effectTime: Shared<Int>,

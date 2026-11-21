@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.data.repository
 
+import com.dirtyredz.gvmled.light.protocol.Hue
 import com.dirtyredz.gvmled.light.connection.LightConnection
 import com.dirtyredz.gvmled.light.connection.LinkStatus
 import com.dirtyredz.gvmled.data.model.KnownLight
@@ -31,7 +32,7 @@ class LightsRepositoryTest {
     ) = LightsRepository(connections, catalog, wanted, statuses)
 
     @Test fun entriesCarryEachLightsOwnWantedStateAndApplyStatus() = runTest {
-        val record = WantedRecord(3, WantedState(power = true, mode = LightMode.Hsi, brightness = 50, hue = 7, saturation = 100))
+        val record = WantedRecord(3, WantedState(power = true, mode = LightMode.Hsi, brightness = 50, hue = Hue(7), saturation = 100))
         val repository = repo(
             MutableStateFlow(listOf(LightConnection(a), LightConnection(b))),
             MutableStateFlow(catalog(a to "Key", b to "Fill")),

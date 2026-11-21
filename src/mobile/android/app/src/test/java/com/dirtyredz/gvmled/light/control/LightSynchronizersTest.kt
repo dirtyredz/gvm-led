@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.light.control
 
+import com.dirtyredz.gvmled.light.protocol.Hue
 import com.dirtyredz.gvmled.light.connection.Advertisement
 import com.dirtyredz.gvmled.light.connection.ConnectionCoordinator
 import com.dirtyredz.gvmled.light.connection.FakeScanner
@@ -23,7 +24,7 @@ class LightSynchronizersTest {
     private val key = "94:C9:60:E5:D7:6F"
     private val fill = "94:C9:60:EB:67:E6"
     private val back = "94:C9:60:AA:BB:CC"
-    private val amber = WantedState(power = true, mode = LightMode.Hsi, brightness = 50, hue = 7, saturation = 100)
+    private val amber = WantedState(power = true, mode = LightMode.Hsi, brightness = 50, hue = Hue(7), saturation = 100)
 
     private class Rig(
         val coordinator: ConnectionCoordinator,

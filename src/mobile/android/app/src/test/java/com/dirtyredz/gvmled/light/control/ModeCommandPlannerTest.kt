@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.light.control
 
+import com.dirtyredz.gvmled.light.protocol.Hue
 import com.dirtyredz.gvmled.light.protocol.LegacyCommand
 import com.dirtyredz.gvmled.light.protocol.SetCommand
 import com.dirtyredz.gvmled.light.protocol.hex
@@ -49,22 +50,22 @@ class ModeCommandPlannerTest {
     }
 
     @Test fun hsiIsModeFirstThenHueSaturationBrightnessAndPowerLast() {
-        val red = WantedState(power = true, mode = LightMode.Hsi, brightness = 50, hue = 0, saturation = 100, cct = 44)
+        val red = WantedState(power = true, mode = LightMode.Hsi, brightness = 50, hue = Hue(0), saturation = 100, cct = 44)
         assertFrames(listOf(Tx.MODE_HSI, Tx.HUE_0, Tx.SAT_100, Tx.BRIGHT_50, Tx.POWER_ON), bytes(red))
-        val paleBlue = red.copy(hue = 48, saturation = 50)
+        val paleBlue = red.copy(hue = Hue(48), saturation = 50)
         assertFrames(listOf(Tx.MODE_HSI, Tx.HUE_240, Tx.SAT_50, Tx.BRIGHT_50, Tx.POWER_ON), bytes(paleBlue))
     }
 
     @Test fun cctSendsOnlyItsValueAtBothHelloEndpoints() {
-        val low = WantedState(power = true, mode = LightMode.Cct, brightness = 40, cct = 32, hue = 7, saturation = 100)
+        val low = WantedState(power = true, mode = LightMode.Cct, brightness = 40, cct = 32, hue = Hue(7), saturation = 100)
         assertFrames(listOf(Tx.MODE_CCT, Tx.CCT_3200, Tx.BRIGHT_40, Tx.POWER_ON), bytes(low))
         assertFrames(listOf(Tx.MODE_CCT, Tx.CCT_5600, Tx.BRIGHT_40, Tx.POWER_ON), bytes(low.copy(cct = 56)))
     }
 
     @Test fun scenesSendSceneThenOnlyTheirApplicableFields() {
-        val scene19 = WantedState(power = true, mode = LightMode.Scene, brightness = 50, cct = 32, scene = 19, effectTime = 20, hue = 3)
+        val scene19 = WantedState(power = true, mode = LightMode.Scene, brightness = 50, cct = 32, scene = 19, effectTime = 20, hue = Hue(3))
         assertFrames(listOf(Tx.MODE_SCENE, Tx.SCENE_19, Tx.CCT_3200, Tx.TIME_2000, Tx.BRIGHT_50, Tx.POWER_ON), bytes(scene19))
-        val scene20 = WantedState(power = true, mode = LightMode.Scene, brightness = 50, hue = 48, saturation = 100, scene = 20, effectTime = 5)
+        val scene20 = WantedState(power = true, mode = LightMode.Scene, brightness = 50, hue = Hue(48), saturation = 100, scene = 20, effectTime = 5)
         assertFrames(
             listOf(Tx.MODE_SCENE, Tx.SCENE_20, Tx.HUE_240, Tx.SAT_100, Tx.TIME_500, Tx.BRIGHT_50, Tx.POWER_ON),
             bytes(scene20),
@@ -78,7 +79,7 @@ class ModeCommandPlannerTest {
     }
 
     @Test fun powerOffIsStillACompleteModeFirstTransactionEndingInPower() {
-        val off = WantedState(power = false, mode = LightMode.Hsi, brightness = 50, hue = 48, saturation = 100)
+        val off = WantedState(power = false, mode = LightMode.Hsi, brightness = 50, hue = Hue(48), saturation = 100)
         assertFrames(listOf(Tx.MODE_HSI, Tx.HUE_240, Tx.SAT_100, Tx.BRIGHT_50, Tx.POWER_OFF), bytes(off))
     }
 
@@ -88,12 +89,12 @@ class ModeCommandPlannerTest {
         assertEquals("needs a value for colour temperature", blocked(WantedState(true, LightMode.Cct, 50)))
         assertEquals("needs a value for effect time", blocked(WantedState(true, LightMode.Scene, 50, scene = 6)))
         assertEquals("scene 21 is not supported", blocked(WantedState(true, LightMode.Scene, 50, scene = 21)))
-        assertEquals("brightness must be 0-100 %", blocked(WantedState(true, LightMode.Hsi, 101, hue = 1, saturation = 1)))
-        assertEquals("saturation is out of range", blocked(WantedState(true, LightMode.Hsi, 50, hue = 1, saturation = 101)))
+        assertEquals("brightness must be 0-100 %", blocked(WantedState(true, LightMode.Hsi, 101, hue = Hue(1), saturation = 1)))
+        assertEquals("saturation is out of range", blocked(WantedState(true, LightMode.Hsi, 50, hue = Hue(1), saturation = 101)))
         assertTrue(blocked(WantedState(true, LightMode.Cct, 50, cct = 60)).contains("outside its range 3200-5600 K"))
         // A CCT-bearing scene is range-checked too; an inactive CCT never is.
         assertTrue(blocked(WantedState(true, LightMode.Scene, 50, scene = 5, cct = 20)).contains("outside"))
-        assertNull(ModeCommandPlanner.problem(WantedState(true, LightMode.Hsi, 50, hue = 1, saturation = 1, cct = 99), range))
+        assertNull(ModeCommandPlanner.problem(WantedState(true, LightMode.Hsi, 50, hue = Hue(1), saturation = 1, cct = 99), range))
     }
 
     @Test fun withoutARangeAStoredCctIsAcceptedUntilItIsSent() {

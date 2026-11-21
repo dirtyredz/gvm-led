@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.feature.lights
 
+import com.dirtyredz.gvmled.light.protocol.Hue
 import com.dirtyredz.gvmled.light.protocol.WireUnits
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -9,7 +10,7 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /** A wheel selection in protocol units: hue in 5-degree steps (0..71), saturation 0..100. */
-internal data class HueSat(val hue: Int, val saturation: Int)
+internal data class HueSat(val hue: Hue, val saturation: Int)
 
 /**
  * A selection the owner made, remembered with the input (wanted) value ([base]) it was made against. The

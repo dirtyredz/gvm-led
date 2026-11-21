@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.dirtyredz.gvmled.light.control.Shared
+import com.dirtyredz.gvmled.light.protocol.Hue
 import com.dirtyredz.gvmled.light.protocol.WireUnits
 
 /** Largest wheel diameter (layout bounds); narrower screens shrink it. */
@@ -45,8 +46,8 @@ private val WHEEL_MAX_SIZE = 240.dp
 private val THUMB_INSET = 16.dp
 
 private val presets = listOf(
-    "Red" to 0, "Orange" to 6, "Yellow" to 12, "Green" to 24,
-    "Cyan" to 36, "Blue" to 48, "Purple" to 54, "Magenta" to 60,
+    "Red" to Hue(0), "Orange" to Hue(6), "Yellow" to Hue(12), "Green" to Hue(24),
+    "Cyan" to Hue(36), "Blue" to Hue(48), "Purple" to Hue(54), "Magenta" to Hue(60),
 )
 
 private fun colourOf(selection: HueSat): Color =
@@ -58,7 +59,7 @@ private fun colourOf(selection: HueSat): Color =
  * one wanted revision. Mixed or Unknown values show no thumb until the owner picks.
  */
 @Composable
-internal fun ColorWheelPicker(hue: Shared<Int>, saturation: Shared<Int>, onCommit: (hue: Int, saturation: Int) -> Unit) {
+internal fun ColorWheelPicker(hue: Shared<Hue>, saturation: Shared<Int>, onCommit: (hue: Hue, saturation: Int) -> Unit) {
     val known = if (hue is Shared.Same && saturation is Shared.Same) HueSat(hue.value, saturation.value) else null
     // Not keyed on hue/saturation: the Wheel's pointerInput blocks capture this state once, so re-keying
     // it when the light confirms a value left them writing to an orphaned state (drag stopped showing).

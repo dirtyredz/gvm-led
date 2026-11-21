@@ -1,5 +1,6 @@
 package com.dirtyredz.gvmled.feature.lights
 
+import com.dirtyredz.gvmled.light.protocol.Hue
 import com.dirtyredz.gvmled.data.model.ControlTarget
 import com.dirtyredz.gvmled.data.model.KnownLight
 import com.dirtyredz.gvmled.data.model.LightCatalog
@@ -34,7 +35,7 @@ class LightControlsStateTest {
         listOf(KnownLight(a, "Key"), KnownLight(b, "Fill"), KnownLight(c, "Back")),
         listOf(LightGroup("g1", "Key and Fill", listOf(a, b)), LightGroup("g2", "All three", listOf(a, b, c))),
     )
-    private val hsi = WantedState(true, LightMode.Hsi, 50, hue = 48, saturation = 100)
+    private val hsi = WantedState(true, LightMode.Hsi, 50, hue = Hue(48), saturation = 100)
 
     private fun entry(address: String, name: String, state: WantedState?, apply: ApplyStatus, live: Boolean = true) = LightEntry(
         connection = LightConnection(
@@ -61,7 +62,7 @@ class LightControlsStateTest {
         val result = state(ControlTarget.Group("g1"))
         val controls = result.controls!!
         assertEquals(Shared.Same(LightMode.Hsi), controls.mode)
-        assertEquals(Shared.Same(48), controls.hue)
+        assertEquals(Shared.Same(Hue(48)), controls.hue)
         assertEquals(Shared.Mixed, controls.brightness)
         assertEquals("Fill has not reported its colour temperature range yet", controls.cctUnavailable)
         assertEquals("1 of 2 confirmed; Fill waiting for connection", result.outcome)
@@ -91,7 +92,7 @@ class LightControlsStateTest {
         val values = state(ControlTarget.Light(a)).controls!!
         assertEquals(LightEdit(mode = LightMode.Cct, cct = 44, fillOnly = setOf(Field.Cct)), modeSwitch(LightMode.Cct, values))
         assertEquals(
-            LightEdit(mode = LightMode.Hsi, hue = 48, saturation = 100, fillOnly = setOf(Field.Hue, Field.Saturation)),
+            LightEdit(mode = LightMode.Hsi, hue = Hue(48), saturation = 100, fillOnly = setOf(Field.Hue, Field.Saturation)),
             modeSwitch(LightMode.Hsi, values),
         )
         val groupValues = state(ControlTarget.Group("g1")).controls!!
@@ -101,7 +102,7 @@ class LightControlsStateTest {
     @Test fun sceneSelectOffersOnlyTheFieldsThatSceneUses() {
         val values = state(ControlTarget.Light(a)).controls!!
         val scene20 = sceneSelect(20, values)
-        assertEquals(LightEdit(mode = LightMode.Scene, scene = 20, hue = 48, saturation = 100, effectTime = 10,
+        assertEquals(LightEdit(mode = LightMode.Scene, scene = 20, hue = Hue(48), saturation = 100, effectTime = 10,
             fillOnly = setOf(Field.Cct, Field.Hue, Field.Saturation, Field.EffectTime)), scene20)
         val scene19 = sceneSelect(19, values)
         assertEquals(44, scene19.cct)
