@@ -2,8 +2,8 @@
 id: dk-f2f6ee10
 type: bug
 created: 2026-10-28
-status: todo
-since: 2026-10-28
+status: done
+since: 2026-11-21
 area: android
 priority: P2
 rank: zzzzy
